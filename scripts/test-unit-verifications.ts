@@ -5,6 +5,7 @@ import { verifyCsrf } from "../src/lib/security/csrf";
 import { readJsonBody } from "../src/lib/security/request-body";
 import { aiPlanSchema, createEventSchema, budgetCategorySchema, timelineTaskSchema, vendorItemSchema } from "../src/lib/validations/event";
 import { chatRequestSchema } from "../src/lib/validations/ai";
+import { normalizeDatabaseUrl } from "../src/lib/db/connection-string";
 
 let passed = 0;
 let failed = 0;
@@ -112,6 +113,15 @@ test("readJsonBody rejects payloads exceeding the configured byte limit", async 
     body: JSON.stringify({ message: "too large" }),
   });
   await assert.rejects(readJsonBody(request, 5), /too large/i);
+});
+
+test("database URL normalization removes channel_binding and preserves sslmode", () => {
+  const normalized = new URL(normalizeDatabaseUrl(
+    "postgresql://user:pass@db.example.test/neondb?channel_binding=require&sslmode=require",
+  ));
+  assert.strictEqual(normalized.pathname, "/neondb");
+  assert.strictEqual(normalized.searchParams.has("channel_binding"), false);
+  assert.strictEqual(normalized.searchParams.get("sslmode"), "require");
 });
 
 // 5. Zod Validation Schemas

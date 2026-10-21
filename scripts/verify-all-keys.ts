@@ -2,6 +2,7 @@ import "dotenv/config";
 import { neon } from "@neondatabase/serverless";
 import { generateText } from "ai";
 import { getAiModel, isAiConfigured } from "../src/lib/ai/client";
+import { normalizeDatabaseUrl } from "../src/lib/db/connection-string";
 
 async function verifyAll() {
   console.log("==================================================");
@@ -21,8 +22,7 @@ async function verifyAll() {
     allPassed = false;
   } else {
     try {
-      const cleanUrl = rawDbUrl.replace(/[?&]channel_binding=[^&]+/, "").replace(/\?$/, "");
-      const sql = neon(cleanUrl);
+      const sql = neon(normalizeDatabaseUrl(rawDbUrl));
       const res = await sql.query("SELECT 1 as connected");
       if (res && res.length > 0) {
         console.log("   ✅ CONNECTED: Successfully queried Neon PostgreSQL database!");

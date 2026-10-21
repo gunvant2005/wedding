@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "@/db/schema";
+import { normalizeDatabaseUrl } from "@/lib/db/connection-string";
 
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
@@ -15,10 +16,7 @@ function createDb(): Db {
       "DATABASE_URL is not set. Copy .env.example to .env.local and add your Neon connection string.",
     );
   }
-  const cleanUrl = rawUrl
-    .replace(/[?&]channel_binding=[^&]+/, "")
-    .replace(/\?$/, "");
-  const sql = neon(cleanUrl);
+  const sql = neon(normalizeDatabaseUrl(rawUrl));
   return drizzle(sql, { schema });
 }
 
