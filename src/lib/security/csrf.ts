@@ -8,6 +8,9 @@ export function verifyCsrf(request: Request): boolean {
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.BETTER_AUTH_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : undefined) ||
     "http://localhost:3000";
 
   // In development, allow same-origin
