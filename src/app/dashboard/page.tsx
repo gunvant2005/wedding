@@ -6,6 +6,7 @@ import { budgetItems } from "@/db/schema";
 import { inArray, sql } from "drizzle-orm";
 import { SiteHeader } from "@/components/site-header";
 import { DashboardClient } from "@/components/dashboard/dashboard-client";
+import { isAiConfigured } from "@/lib/ai/client";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
           events={events}
           spentMap={spentMap}
           userName={session.user.name || "Esteemed Patron"}
+          aiConfigured={isAiConfigured()}
         />
       </main>
     </div>

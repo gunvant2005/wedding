@@ -46,11 +46,13 @@ export function EventWizard() {
 
   const [form, setForm] = useState(() => ({
     title: searchParams?.get("title") || "",
-    type: searchParams?.get("type") || "wedding",
+    type: ["wedding", "birthday", "community"].includes(searchParams?.get("type") || "")
+      ? searchParams?.get("type") || "wedding"
+      : "wedding",
     eventDate: format(new Date(Date.now() + 180 * 86400000), "yyyy-MM-dd"),
     location: searchParams?.get("location") || "",
-    budgetDollars: Number(searchParams?.get("budget")) || 50000,
-    guestCount: Number(searchParams?.get("guests")) || 150,
+    budgetDollars: Math.min(20_000_000, Math.max(0, Number(searchParams?.get("budget")) || 50000)),
+    guestCount: Math.min(100_000, Math.max(0, Number(searchParams?.get("guests")) || 150)),
     theme: searchParams?.get("theme") || "Art Deco Champagne & Noir",
     notes: searchParams?.get("notes") || "",
   }));
@@ -65,6 +67,7 @@ export function EventWizard() {
           ...form,
           budgetTotalCents: dollarsToCents(form.budgetDollars),
         }),
+        signal: AbortSignal.timeout(65_000),
       });
 
       if (!res.ok) {
@@ -241,7 +244,17 @@ export function EventWizard() {
             </Button>
             <Button
               className="flex-1"
-              disabled={!form.title.trim() || loadingPlan}
+              disabled={
+                !form.title.trim() ||
+                !form.eventDate ||
+                !Number.isFinite(form.budgetDollars) ||
+                form.budgetDollars < 0 ||
+                form.budgetDollars > 20_000_000 ||
+                !Number.isInteger(form.guestCount) ||
+                form.guestCount < 0 ||
+                form.guestCount > 100_000 ||
+                loadingPlan
+              }
               onClick={generatePlan}
             >
               <Sparkles className="h-4 w-4" />

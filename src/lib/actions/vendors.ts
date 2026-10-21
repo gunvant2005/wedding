@@ -10,6 +10,7 @@ import { getEventForUser, getVendorForUser } from "@/lib/db/queries";
 import {
   vendorItemSchema,
   vendorStatusSchema,
+  updateVendorItemSchema,
 } from "@/lib/validations/event";
 import { z } from "zod";
 
@@ -62,36 +63,34 @@ export async function updateVendorStatusAction(
 
 export async function updateVendorAction(
   vendorId: string,
-  raw: Partial<{
-    name: string;
-    category: string;
-    status: z.infer<typeof vendorStatusSchema>;
-    contactName: string | null;
-    contactEmail: string | null;
-    contactPhone: string | null;
-    notes: string | null;
-  }>,
+  raw: unknown,
 ) {
   const session = await requireSession();
   const vendor = await getVendorForUser(vendorId, session.user.id);
   if (!vendor) throw new Error("Vendor not found");
+  const parsed = updateVendorItemSchema.extend({
+    contactName: vendorItemSchema.shape.contactName.nullable().optional(),
+    contactEmail: vendorItemSchema.shape.contactEmail.nullable().optional(),
+    contactPhone: vendorItemSchema.shape.contactPhone.nullable().optional(),
+    notes: vendorItemSchema.shape.notes.nullable().optional(),
+  }).parse(raw);
 
   await db
     .update(vendorItems)
     .set({
-      ...(raw.name !== undefined ? { name: raw.name } : {}),
-      ...(raw.category !== undefined ? { category: raw.category } : {}),
-      ...(raw.status !== undefined ? { status: raw.status } : {}),
-      ...(raw.contactName !== undefined
-        ? { contactName: raw.contactName }
+      ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+      ...(parsed.category !== undefined ? { category: parsed.category } : {}),
+      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+      ...(parsed.contactName !== undefined
+        ? { contactName: parsed.contactName }
         : {}),
-      ...(raw.contactEmail !== undefined
-        ? { contactEmail: raw.contactEmail }
+      ...(parsed.contactEmail !== undefined
+        ? { contactEmail: parsed.contactEmail }
         : {}),
-      ...(raw.contactPhone !== undefined
-        ? { contactPhone: raw.contactPhone }
+      ...(parsed.contactPhone !== undefined
+        ? { contactPhone: parsed.contactPhone }
         : {}),
-      ...(raw.notes !== undefined ? { notes: raw.notes } : {}),
+      ...(parsed.notes !== undefined ? { notes: parsed.notes } : {}),
     })
     .where(eq(vendorItems.id, vendorId));
 

@@ -74,28 +74,28 @@ export function CountdownSpotlight({ event }: CountdownSpotlightProps) {
         </div>
 
         {/* Live Countdown Clock */}
-        <div className="flex items-center gap-2 sm:gap-4" aria-label="Live Countdown Timer">
+        <div className="flex items-center gap-2 sm:gap-4" role="timer" aria-label="Time remaining until event">
           <div className="flex flex-col items-center rounded-2xl border border-[#C5A059]/30 bg-[#0A0A0D]/90 p-3 sm:p-4 min-w-[64px] sm:min-w-[76px] text-center shadow-lg">
             <span className="font-mono text-2xl sm:text-3xl font-bold text-[#FAF8F5]">
               {String(timeLeft.days).padStart(2, "0")}
             </span>
             <span className="text-[9px] uppercase tracking-widest text-[#9E9685] mt-1">Days</span>
           </div>
-          <div className="text-xl font-bold text-[#C5A059]">:</div>
+          <div aria-hidden="true" className="text-xl font-bold text-[#C5A059]">:</div>
           <div className="flex flex-col items-center rounded-2xl border border-[#C5A059]/30 bg-[#0A0A0D]/90 p-3 sm:p-4 min-w-[64px] sm:min-w-[76px] text-center shadow-lg">
             <span className="font-mono text-2xl sm:text-3xl font-bold text-[#FAF8F5]">
               {String(timeLeft.hours).padStart(2, "0")}
             </span>
             <span className="text-[9px] uppercase tracking-widest text-[#9E9685] mt-1">Hours</span>
           </div>
-          <div className="text-xl font-bold text-[#C5A059]">:</div>
+          <div aria-hidden="true" className="text-xl font-bold text-[#C5A059]">:</div>
           <div className="flex flex-col items-center rounded-2xl border border-[#C5A059]/30 bg-[#0A0A0D]/90 p-3 sm:p-4 min-w-[64px] sm:min-w-[76px] text-center shadow-lg">
             <span className="font-mono text-2xl sm:text-3xl font-bold text-[#FAF8F5]">
               {String(timeLeft.minutes).padStart(2, "0")}
             </span>
             <span className="text-[9px] uppercase tracking-widest text-[#9E9685] mt-1">Mins</span>
           </div>
-          <div className="text-xl font-bold text-[#C5A059]">:</div>
+          <div aria-hidden="true" className="text-xl font-bold text-[#C5A059]">:</div>
           <div className="flex flex-col items-center rounded-2xl border border-[#C5A059]/30 bg-[#0A0A0D]/90 p-3 sm:p-4 min-w-[64px] sm:min-w-[76px] text-center shadow-lg">
             <span className="font-mono text-2xl sm:text-3xl font-bold text-[#DFB15B]">
               {String(timeLeft.seconds).padStart(2, "0")}

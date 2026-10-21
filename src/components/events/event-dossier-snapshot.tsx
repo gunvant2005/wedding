@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { format } from "date-fns";
 import {
-  Sparkles,
   Crown,
   Calendar,
   MapPin,
@@ -15,7 +14,6 @@ import {
   ExternalLink,
   Copy,
   CheckCircle2,
-  AlertCircle,
   FileText,
   ChevronRight,
   Wine,
@@ -23,7 +21,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency, daysUntil } from "@/lib/utils";
 import type { Event, BudgetCategory, TimelineTask, VendorItem } from "@/db/schema";
@@ -237,7 +234,6 @@ export function EventDossierSnapshot({
 
         {/* Interactive Detail Tabs */}
         <div
-          role="tablist"
           aria-label="Event dossier sections"
           className="mt-6 flex items-center gap-2 border-b border-[rgba(197,160,89,0.12)] pb-4"
         >
@@ -248,11 +244,9 @@ export function EventDossierSnapshot({
           ].map((tab) => (
             <button
               key={tab.id}
-              role="tab"
-              id={`tab-${tab.id}`}
-              aria-controls={`tabpanel-${tab.id}`}
-              aria-selected={activeTab === tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              type="button"
+              aria-pressed={activeTab === tab.id}
+              onClick={() => setActiveTab(tab.id as "specs" | "hospitality" | "milestones")}
               className={`rounded-full px-4 py-1.5 text-xs font-medium tracking-wide transition-all cursor-pointer ${
                 activeTab === tab.id
                   ? "border border-[#DFB15B] bg-[#DFB15B]/15 text-[#FAF8F5] shadow-[0_0_12px_rgba(212,175,55,0.2)]"
@@ -267,9 +261,6 @@ export function EventDossierSnapshot({
         {/* Tab 1: Aesthetic & Venue Specs */}
         {activeTab === "specs" && (
           <div
-            role="tabpanel"
-            id="tabpanel-specs"
-            aria-labelledby="tab-specs"
             className="mt-6 grid gap-6 sm:grid-cols-2 animate-fade-up"
           >
             {/* Spec 1: Aesthetic Theme */}
@@ -360,7 +351,7 @@ export function EventDossierSnapshot({
                 Atelier Executive Notes
               </span>
               <p className="mt-3 text-xs sm:text-sm text-[#D6D0C2] leading-relaxed italic border-l-2 border-[#DFB15B]/50 pl-3">
-                "{event.notes || "No special directives logged. Everything calibrated according to haute etiquette."}"
+                &ldquo;{event.notes || "No special directives logged. Everything calibrated according to haute etiquette."}&rdquo;
               </p>
             </div>
           </div>
@@ -369,9 +360,6 @@ export function EventDossierSnapshot({
         {/* Tab 2: Hospitality & Seating Experience */}
         {activeTab === "hospitality" && (
           <div
-            role="tabpanel"
-            id="tabpanel-hospitality"
-            aria-labelledby="tab-hospitality"
             className="mt-6 grid gap-6 sm:grid-cols-3 animate-fade-up"
           >
             <div className="rounded-2xl border border-[rgba(197,160,89,0.18)] bg-[#14141A]/80 p-5 backdrop-blur-md">
@@ -418,9 +406,6 @@ export function EventDossierSnapshot({
         {/* Tab 3: Urgent Upcoming Milestones Radar */}
         {activeTab === "milestones" && (
           <div
-            role="tabpanel"
-            id="tabpanel-milestones"
-            aria-labelledby="tab-milestones"
             className="mt-6 space-y-3 animate-fade-up"
           >
             {pendingTasks.length === 0 ? (

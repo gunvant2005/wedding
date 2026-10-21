@@ -27,20 +27,6 @@ export async function createEventFromInput(
   const type = input.type as EventTypeKey;
   const template = DEFAULT_TEMPLATES[type];
 
-  await db.insert(events).values({
-    id: eventId,
-    userId,
-    type: input.type,
-    title: input.title,
-    eventDate,
-    location: input.location || null,
-    guestCount: input.guestCount ?? 0,
-    budgetTotalCents: input.budgetTotalCents ?? 0,
-    theme: input.theme || null,
-    notes: input.notes || null,
-    status: "planning",
-  });
-
   const budgetSource =
     aiPlan?.budgetCategories ??
     template.budgetCategories.map((c) => ({
@@ -87,13 +73,6 @@ export async function createEventFromInput(
     }
   }
 
-  if (categoriesToInsert.length > 0) {
-    await db.insert(budgetCategories).values(categoriesToInsert);
-  }
-  if (itemsToInsert.length > 0) {
-    await db.insert(budgetItems).values(itemsToInsert);
-  }
-
   const taskSource =
     aiPlan?.timelineTasks ??
     template.timelineTasks.map((t) => ({
@@ -116,10 +95,6 @@ export async function createEventFromInput(
     }),
   );
 
-  if (tasksToInsert.length > 0) {
-    await db.insert(timelineTasks).values(tasksToInsert);
-  }
-
   const vendorSource = aiPlan?.vendorItems ?? [...template.vendorItems];
   const vendorsToInsert: (typeof vendorItems.$inferInsert)[] = vendorSource.map(
     (v, i) => ({
@@ -132,12 +107,9 @@ export async function createEventFromInput(
     }),
   );
 
-  if (vendorsToInsert.length > 0) {
-    await db.insert(vendorItems).values(vendorsToInsert);
-  }
-
+  const ideasToInsert: (typeof eventIdeas.$inferInsert)[] = [];
   if (aiPlan?.ideas?.length) {
-    const ideasToInsert: (typeof eventIdeas.$inferInsert)[] = aiPlan.ideas.map(
+    ideasToInsert.push(...aiPlan.ideas.map(
       (idea) => ({
         id: nanoid(),
         eventId,
@@ -146,9 +118,33 @@ export async function createEventFromInput(
         categoryTag: idea.categoryTag ?? null,
         dismissed: false,
       }),
-    );
-    await db.insert(eventIdeas).values(ideasToInsert);
+    ));
   }
+
+  // Neon HTTP batches execute as one database transaction, so a failure in
+  // any child insert cannot leave a partially initialized event behind.
+  await db.batch([
+    db.insert(events).values({
+      id: eventId,
+      userId,
+      type: input.type,
+      title: input.title,
+      eventDate,
+      location: input.location || null,
+      guestCount: input.guestCount ?? 0,
+      budgetTotalCents: input.budgetTotalCents ?? 0,
+      theme: input.theme || null,
+      notes: input.notes || null,
+      status: "planning",
+    }),
+    db.insert(budgetCategories).values(categoriesToInsert),
+    db.insert(budgetItems).values(itemsToInsert),
+    db.insert(timelineTasks).values(tasksToInsert),
+    db.insert(vendorItems).values(vendorsToInsert),
+    ...(ideasToInsert.length > 0
+      ? [db.insert(eventIdeas).values(ideasToInsert)]
+      : []),
+  ] as const);
 
   return eventId;
 }

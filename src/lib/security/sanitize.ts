@@ -18,7 +18,7 @@ export function sanitizeForPrompt(input: string, maxLength = 500): string {
 
   // Truncate to max length
   if (cleaned.length > maxLength) {
-    cleaned = cleaned.slice(0, maxLength) + "…";
+    cleaned = cleaned.slice(0, maxLength);
   }
 
   return cleaned;
@@ -31,5 +31,9 @@ export function sanitizeForPrompt(input: string, maxLength = 500): string {
 export function delimitUserContent(label: string, value: string): string {
   const sanitized = sanitizeForPrompt(value);
   if (!sanitized) return `${label}: N/A`;
-  return `${label}: """${sanitized}"""`;
+  // Prevent user input from closing the delimiter and being interpreted as
+  // additional prompt instructions. This is defense-in-depth, not a guarantee
+  // against prompt injection.
+  const delimited = sanitized.replace(/"{3}/g, '""\\"');
+  return `${label}: """${delimited}"""`;
 }

@@ -17,12 +17,7 @@ async function main() {
     process.env.OPENAI_API_KEY ||
     "";
 
-  const maskedKey =
-    rawKey.length > 8
-      ? `${rawKey.slice(0, 4)}...${rawKey.slice(-4)} (length: ${rawKey.length})`
-      : "(key is very short or empty)";
-
-  console.log(`Key detected: ${maskedKey}`);
+  console.log(`Key detected: configured (${rawKey.length} characters; value not displayed)`);
   console.log(`Target model: ${process.env.AI_MODEL || "gpt-4o-mini"}`);
   console.log("Sending a test query to OpenAI / AI Gateway...");
 
@@ -35,11 +30,11 @@ async function main() {
 
     console.log("✅ SUCCESS! The API key is valid and working.");
     console.log(`AI Response: "${result.text.trim()}"`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("❌ FAILED: Error communicating with AI provider.");
-    const msg = error?.message || String(error);
+    const msg = error instanceof Error ? error.message : String(error);
     // Sanitize any accidental key leak in error message
-    const sanitizedMsg = msg.replace(new RegExp(rawKey, "g"), "[REDACTED_API_KEY]");
+    const sanitizedMsg = rawKey ? msg.split(rawKey).join("[REDACTED_API_KEY]") : msg;
     console.error(`Details: ${sanitizedMsg}`);
     process.exitCode = 1;
   }

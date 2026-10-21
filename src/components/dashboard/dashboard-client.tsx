@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -12,9 +12,7 @@ import {
   Layers,
   ArrowRight,
   Search,
-  Filter,
   CheckCircle2,
-  Clock,
   MapPin,
   Users,
   Copy,
@@ -37,6 +35,7 @@ interface DashboardClientProps {
   events: Event[];
   spentMap: Record<string, number>;
   userName: string;
+  aiConfigured: boolean;
 }
 
 const LUXURY_PRESETS = [
@@ -78,8 +77,9 @@ const LUXURY_PRESETS = [
   },
 ];
 
-export function DashboardClient({ events, spentMap, userName }: DashboardClientProps) {
+export function DashboardClient({ events, spentMap, userName, aiConfigured }: DashboardClientProps) {
   const router = useRouter();
+  const [now] = useState(() => Date.now());
 
   // Search, filter, and sort state
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,10 +93,10 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
   // Compute nearest upcoming event
   const nearestUpcoming = useMemo(() => {
     const upcoming = events
-      .filter((e) => new Date(e.eventDate).getTime() >= Date.now())
+      .filter((e) => new Date(e.eventDate).getTime() >= now)
       .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime());
     return upcoming[0] || events[0] || null;
-  }, [events]);
+  }, [events, now]);
 
   // Portfolio Totals
   const totalBudget = useMemo(
@@ -116,7 +116,7 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
 
   // Filtered & Sorted events
   const filteredEvents = useMemo(() => {
-    let list = events.filter((e) => {
+    const list = events.filter((e) => {
       const matchesSearch =
         e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (e.location && e.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -173,7 +173,7 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
     router.push(`/events/new?${params.toString()}`);
   }
 
-  function copyExecutiveSummary() {
+  async function copyExecutiveSummary() {
     if (events.length === 0) {
       toast.error("No events to summarize yet");
       return;
@@ -191,8 +191,12 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
           `${i + 1}. ${e.title} (${format(new Date(e.eventDate), "MMM d, yyyy")}) — Budget: ${formatCurrency(e.budgetTotalCents)} | Location: ${e.location || "TBD"}`,
       ),
     ];
-    navigator.clipboard.writeText(lines.join("\n"));
-    toast.success("Executive portfolio summary copied to clipboard!");
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      toast.success("Executive portfolio summary copied to clipboard!");
+    } catch {
+      toast.error("Unable to access the clipboard. Check browser permissions.");
+    }
   }
 
   return (
@@ -292,10 +296,14 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
               <Sparkles className="h-4 w-4 text-[#DFB15B]" />
             </div>
             <div className="mt-2 flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#FAF8F5]">Active</p>
+              <span className={`h-2 w-2 rounded-full ${aiConfigured ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-amber-400"}`} />
+              <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#FAF8F5]">
+                {aiConfigured ? "Active" : "Unavailable"}
+              </p>
             </div>
-            <p className="mt-2 text-[11px] text-[#A89F8E]">Neon AI & OpenAI Ready</p>
+            <p className="mt-2 text-[11px] text-[#A89F8E]">
+              {aiConfigured ? "AI provider configured" : "Using event planning templates"}
+            </p>
           </div>
         </div>
 
@@ -372,6 +380,7 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9E9685]" />
             <Input
+              aria-label="Describe your event vision"
               value={customVision}
               onChange={(e) => setCustomVision(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && launchCustomVision()}
@@ -391,9 +400,9 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
 
         {/* Signature Presets Carousel */}
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {LUXURY_PRESETS.map((preset, idx) => (
+          {LUXURY_PRESETS.map((preset) => (
             <div
-              key={idx}
+              key={preset.title}
               role="button"
               tabIndex={0}
               aria-label={`Orchestrate ${preset.title} preset`}
@@ -449,6 +458,7 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
             <div className="relative min-w-[200px] sm:min-w-[240px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9E9685]" />
               <Input
+                aria-label="Search events by title, venue, or theme"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Filter by title or venue..."
@@ -458,8 +468,9 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
 
             {/* Sort Selector */}
             <select
+              aria-label="Sort events"
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
               className="h-9 rounded-md border border-[rgba(197,160,89,0.25)] bg-[#111116] px-3 text-xs text-[#FAF8F5] outline-none focus:border-[#DFB15B]"
             >
               <option value="date-asc">Date: Soonest First</option>
@@ -473,6 +484,8 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
               <button
                 type="button"
                 onClick={() => setViewMode("grid")}
+                aria-label="Grid view"
+                aria-pressed={viewMode === "grid"}
                 className={`rounded p-1.5 transition-colors ${
                   viewMode === "grid"
                     ? "bg-[#C5A059]/25 text-[#DFB15B]"
@@ -485,6 +498,8 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
+                aria-label="List view"
+                aria-pressed={viewMode === "list"}
                 className={`rounded p-1.5 transition-colors ${
                   viewMode === "list"
                     ? "bg-[#C5A059]/25 text-[#DFB15B]"
@@ -508,6 +523,8 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
           ].map((pill) => (
             <button
               key={pill.id}
+              type="button"
+              aria-pressed={selectedType === pill.id}
               onClick={() => setSelectedType(pill.id)}
               className={`rounded-full px-3.5 py-1.5 text-xs font-medium tracking-wide transition-all cursor-pointer ${
                 selectedType === pill.id
@@ -586,7 +603,7 @@ export function DashboardClient({ events, spentMap, userName }: DashboardClientP
 
                     {event.theme && (
                       <p className="mt-2 text-[11px] text-[#A89F8E] italic line-clamp-1">
-                        "{event.theme}"
+                        &ldquo;{event.theme}&rdquo;
                       </p>
                     )}
                   </div>

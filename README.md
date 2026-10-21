@@ -166,10 +166,12 @@ DATABASE_URL="postgresql://user:password@ep-example.neon.tech/neondb?sslmode=req
 # Better Auth — Generate with `openssl rand -base64 32`
 BETTER_AUTH_SECRET="your-32-byte-base64-random-secret"
 BETTER_AUTH_URL="http://localhost:3000"
+# Optional explicit allowed origin for the AI API CSRF check; defaults to BETTER_AUTH_URL
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-# AI Provider — OpenAI API Key or Neon AI Gateway
+# AI Provider — OpenAI-compatible provider API key or Neon AI Gateway
 OPENAI_API_KEY="sk-..."
+# Must match the chosen provider's model identifier
 AI_MODEL="gpt-4o-mini"
 ```
 
@@ -207,16 +209,11 @@ Visit [http://localhost:3000](http://localhost:3000) to begin curating your prem
 
 ---
 
-## 🛡️ Security & Performance Certifications
+## 🛡️ Security, Performance & Accessibility
 
-Gatherly has undergone a comprehensive production security, performance, and accessibility audit:
+The application includes authentication and ownership checks in server actions, request validation, basic security headers, and accessibility affordances such as skip navigation and reduced-motion support. These are implementation measures, not an independent security certification or WCAG conformance claim. Run the project checks before deployment and perform a dedicated accessibility and security review against the production configuration.
 
-| Dimension | Certification / Standard | Implementation Details |
-|:---|:---:|:---|
-| **Security & Privacy** | **Grade A-** | Strict `BETTER_AUTH_SECRET` validation (no hardcoded fallbacks), CSRF Origin/Referer guards on all endpoints, strict Content-Security-Policy (CSP) with frame blocking, and prompt injection sanitization. |
-| **Performance & Speed** | **Grade A** | Bulk database insertions (`db.insert().values([...])` reduced 50 sequential queries to 5), `Promise.all` query parallelization, and isolated countdown ticker preventing unwanted full-page re-renders. |
-| **Accessibility (A11Y)** | **WCAG 2.1 AA** | High-contrast parchment/gold text tokens (>6.2:1 contrast ratio), `#main-content` skip navigation, full ARIA `tablist`/`tabpanel` controls, keyboard accessible cards, and `aria-live="polite"` chat regions. |
-| **Code Quality** | **Grade A** | Next.js 16 App Router error boundaries (`error.tsx`, `not-found.tsx`), loading skeletons (`loading.tsx`), deterministic `MAX(sortOrder) + 1` indexing, and strict TypeScript types. |
+The current npm audit reports advisories in the Drizzle Kit development-tool dependency chain (`@esbuild-kit` / esbuild). The suggested automatic fix downgrades tooling across a major version, so do not apply it blindly; recheck for an upstream compatible release and keep local development servers private while the advisory remains. `npm audit --omit=dev` is the production dependency check.
 
 ---
 
@@ -242,6 +239,8 @@ npm run db:migrate        # Execute pending SQL migrations
 npm run db:studio         # Open Drizzle Studio visual browser
 npm run seed:templates    # Seed default templates (wedding, birthday, community)
 ```
+
+`npm run test:all` writes and deletes database records. Set `TEST_DATABASE_URL` in your local environment to a disposable test database before running it; the script refuses to use `DATABASE_URL` as a fallback. `npm run test:all` also exercises the configured AI provider and may incur provider charges.
 
 ---
 

@@ -1,7 +1,6 @@
 import { db } from "../src/lib/db";
 import {
   user,
-  account,
   session,
   templatePacks,
   events,
@@ -44,14 +43,15 @@ async function runStep(
       details: res || "Success with no errors",
       durationMs: duration
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     const duration = Date.now() - start;
-    console.log(`❌ FAILED (${duration}ms):`, err.message);
+    const message = err instanceof Error ? err.message : String(err);
+    console.log(`❌ FAILED (${duration}ms):`, message);
     report.push({
       feature,
       category,
       status: "FAILED",
-      details: err.stack || err.message,
+      details: err instanceof Error ? err.stack || err.message : message,
       durationMs: duration
     });
   }
@@ -59,6 +59,14 @@ async function runStep(
 
 async function main() {
   console.log("\n=========================================================");
+  const testDatabaseUrl = process.env.TEST_DATABASE_URL?.trim();
+  if (!testDatabaseUrl) {
+    throw new Error(
+      "TEST_DATABASE_URL is required. Integration tests write and delete database rows; point it only at a disposable test database."
+    );
+  }
+  process.env.DATABASE_URL = testDatabaseUrl;
+
   console.log("   GATHERLY: COMPREHENSIVE END-TO-END FEATURE TEST RUN   ");
   console.log("=========================================================\n");
 

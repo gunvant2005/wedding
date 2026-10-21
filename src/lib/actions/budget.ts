@@ -13,6 +13,8 @@ import {
 import {
   budgetCategorySchema,
   budgetItemSchema,
+  updateBudgetCategorySchema,
+  updateBudgetItemSchema,
 } from "@/lib/validations/event";
 
 export async function addBudgetCategoryAction(eventId: string, raw: unknown) {
@@ -42,18 +44,19 @@ export async function addBudgetCategoryAction(eventId: string, raw: unknown) {
 export async function updateBudgetCategoryAction(
   categoryId: string,
   eventId: string,
-  raw: Partial<{ name: string; allocatedCents: number }>,
+  raw: unknown,
 ) {
   const session = await requireSession();
   const event = await getEventForUser(eventId, session.user.id);
   if (!event) throw new Error("Event not found");
+  const parsed = updateBudgetCategorySchema.parse(raw);
 
   await db
     .update(budgetCategories)
     .set({
-      ...(raw.name !== undefined ? { name: raw.name } : {}),
-      ...(raw.allocatedCents !== undefined
-        ? { allocatedCents: raw.allocatedCents }
+      ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+      ...(parsed.allocatedCents !== undefined
+        ? { allocatedCents: parsed.allocatedCents }
         : {}),
     })
     .where(
@@ -90,6 +93,12 @@ export async function addBudgetItemAction(eventId: string, raw: unknown) {
   if (!event) throw new Error("Event not found");
 
   const parsed = budgetItemSchema.parse(raw);
+  const [category] = await db
+    .select({ id: budgetCategories.id })
+    .from(budgetCategories)
+    .where(and(eq(budgetCategories.id, parsed.categoryId), eq(budgetCategories.eventId, eventId)))
+    .limit(1);
+  if (!category) throw new Error("Budget category not found in this event");
   await db.insert(budgetItems).values({
     id: nanoid(),
     eventId,
@@ -104,28 +113,24 @@ export async function addBudgetItemAction(eventId: string, raw: unknown) {
 
 export async function updateBudgetItemAction(
   itemId: string,
-  raw: Partial<{
-    name: string;
-    estimatedCents: number;
-    actualCents: number;
-    paid: boolean;
-  }>,
+  raw: unknown,
 ) {
   const session = await requireSession();
   const item = await getBudgetItemForUser(itemId, session.user.id);
   if (!item) throw new Error("Item not found");
+  const parsed = updateBudgetItemSchema.parse(raw);
 
   await db
     .update(budgetItems)
     .set({
-      ...(raw.name !== undefined ? { name: raw.name } : {}),
-      ...(raw.estimatedCents !== undefined
-        ? { estimatedCents: raw.estimatedCents }
+      ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+      ...(parsed.estimatedCents !== undefined
+        ? { estimatedCents: parsed.estimatedCents }
         : {}),
-      ...(raw.actualCents !== undefined
-        ? { actualCents: raw.actualCents }
+      ...(parsed.actualCents !== undefined
+        ? { actualCents: parsed.actualCents }
         : {}),
-      ...(raw.paid !== undefined ? { paid: raw.paid } : {}),
+      ...(parsed.paid !== undefined ? { paid: parsed.paid } : {}),
     })
     .where(eq(budgetItems.id, itemId));
 

@@ -213,6 +213,17 @@ body {
   animation: glow-border 4s ease-in-out infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 .card-detail {
   background: rgba(16, 16, 21, 0.85);
   border: 1px solid rgba(197, 160, 89, 0.2);

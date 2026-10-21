@@ -36,9 +36,10 @@ export function ChatPanel({
     e.preventDefault();
     if (!input.trim() || loading) return;
 
+    const userMessage = input.trim();
     const nextMessages: Msg[] = [
-      ...messages,
-      { role: "user", content: input.trim() },
+      ...messages.slice(-28),
+      { role: "user", content: userMessage },
     ];
     setMessages(nextMessages);
     setInput("");
@@ -48,7 +49,7 @@ export function ChatPanel({
       const res = await fetch("/api/ai/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ eventId, messages: nextMessages }),
+        body: JSON.stringify({ eventId, message: userMessage }),
       });
 
       if (!res.ok) {
@@ -137,6 +138,7 @@ export function ChatPanel({
 
       <form onSubmit={onSubmit} className="border-t border-[rgba(197,160,89,0.18)] p-3">
         <Textarea
+          aria-label="Message to the AI planner"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask your concierge about budgets, etiquette, or run-of-show..."

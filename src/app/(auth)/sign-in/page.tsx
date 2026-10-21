@@ -13,7 +13,12 @@ import { Crown } from "lucide-react";
 function SignInForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const next = params.get("next") || "/dashboard";
+  const requestedNext = params.get("next") || "/dashboard";
+  const next = requestedNext.startsWith("/") &&
+    !requestedNext.startsWith("//") &&
+    !requestedNext.includes("\\")
+    ? requestedNext
+    : "/dashboard";
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {

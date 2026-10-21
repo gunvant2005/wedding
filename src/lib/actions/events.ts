@@ -9,7 +9,9 @@ import { events, eventIdeas } from "@/db/schema";
 import { createEventFromInput } from "@/lib/db/seed-event";
 import { getEventForUser } from "@/lib/db/queries";
 import {
+  aiPlanSchema,
   createEventSchema,
+  eventIdeasSchema,
   updateEventSchema,
   type AiPlan,
 } from "@/lib/validations/event";
@@ -21,10 +23,11 @@ export async function createEventAction(
 ) {
   const session = await requireSession();
   const parsed = createEventSchema.parse(raw);
+  const validatedPlan = aiPlan ? aiPlanSchema.parse(aiPlan) : null;
   const eventId = await createEventFromInput(
     session.user.id,
     parsed,
-    aiPlan ?? null,
+    validatedPlan,
   );
   revalidatePath("/dashboard");
   return { eventId };
@@ -76,11 +79,12 @@ export async function deleteEventAction(eventId: string) {
 
 export async function saveIdeasAction(
   eventId: string,
-  ideas: { title: string; description: string; categoryTag?: string }[],
+  rawIdeas: unknown,
 ) {
   const session = await requireSession();
   const event = await getEventForUser(eventId, session.user.id);
   if (!event) throw new Error("Event not found");
+  const ideas = eventIdeasSchema.parse(rawIdeas);
 
   const existing = await db
     .select()

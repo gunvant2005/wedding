@@ -29,8 +29,8 @@ async function verifyAll() {
       } else {
         console.warn("   ⚠️ Connected, but unexpected query response.");
       }
-    } catch (dbErr: any) {
-      console.error("   ❌ CONNECTION FAILED:", dbErr?.message || dbErr);
+    } catch (dbErr: unknown) {
+      console.error("   ❌ CONNECTION FAILED:", dbErr instanceof Error ? dbErr.message : String(dbErr));
       allPassed = false;
     }
   }
@@ -60,12 +60,7 @@ async function verifyAll() {
       process.env.OPENAI_API_KEY ||
       "";
 
-    const maskedKey =
-      rawAiKey.length > 8
-        ? `${rawAiKey.slice(0, 5)}...${rawAiKey.slice(-4)} (${rawAiKey.length} chars)`
-        : "(key is very short)";
-
-    console.log(`   Detected Key: ${maskedKey}`);
+    console.log(`   Detected Key: configured (${rawAiKey.length} characters; value not displayed)`);
     console.log(`   Target Model: ${process.env.AI_MODEL || "gpt-4o-mini"}`);
     console.log("   Testing query to AI model...");
 
@@ -76,10 +71,10 @@ async function verifyAll() {
         prompt: "Reply with the word: 'Connected'",
       });
       console.log(`   ✅ SUCCESS: AI model is active and responding! Response: "${result.text.trim()}"`);
-    } catch (aiErr: any) {
+    } catch (aiErr: unknown) {
       console.error("   ❌ CONNECTION FAILED: Unable to authenticate with AI provider.");
-      const msg = aiErr?.message || String(aiErr);
-      const sanitized = msg.replace(new RegExp(rawAiKey, "g"), "[REDACTED_API_KEY]");
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      const sanitized = rawAiKey ? msg.split(rawAiKey).join("[REDACTED_API_KEY]") : msg;
       console.error(`      Error details: ${sanitized}`);
       allPassed = false;
     }

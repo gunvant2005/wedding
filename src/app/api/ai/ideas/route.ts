@@ -6,18 +6,10 @@ import { buildIdeasPrompt } from "@/lib/ai/prompts";
 import { checkRateLimit } from "@/lib/ai/rate-limit";
 import { getEventForUser } from "@/lib/db/queries";
 import { saveIdeasAction } from "@/lib/actions/events";
+import { eventIdeasSchema } from "@/lib/validations/event";
 
 import { verifyCsrf, csrfError } from "@/lib/security/csrf";
-
-const ideasSchema = z.object({
-  ideas: z.array(
-    z.object({
-      title: z.string(),
-      description: z.string(),
-      categoryTag: z.string().optional(),
-    }),
-  ),
-});
+import { readJsonBody, RequestBodyError } from "@/lib/security/request-body";
 
 const ideasRequestSchema = z.object({
   eventId: z.string().min(1),
@@ -40,10 +32,13 @@ export async function POST(req: Request) {
 
   let eventId: string;
   try {
-    const body = await req.json();
+    const body = await readJsonBody(req, 1_024);
     const parsed = ideasRequestSchema.parse(body);
     eventId = parsed.eventId;
-  } catch {
+  } catch (error) {
+    if (error instanceof RequestBodyError) {
+      return Response.json({ error: error.message }, { status: error.status });
+    }
     return Response.json({ error: "eventId required and must be valid" }, { status: 400 });
   }
 
@@ -79,7 +74,7 @@ export async function POST(req: Request) {
   try {
     const { object } = await generateObject({
       model: getAiModel(),
-      schema: ideasSchema,
+      schema: eventIdeasSchema.transform((ideas) => ({ ideas })),
       prompt: buildIdeasPrompt(event),
     });
     await saveIdeasAction(eventId, object.ideas);

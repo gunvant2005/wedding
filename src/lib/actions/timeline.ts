@@ -10,8 +10,10 @@ import {
   getEventForUser,
   getTimelineTaskForUser,
 } from "@/lib/db/queries";
-import { timelineTaskSchema, taskStatusSchema } from "@/lib/validations/event";
-import { z } from "zod";
+import {
+  timelineTaskSchema,
+  updateTimelineTaskSchema,
+} from "@/lib/validations/event";
 
 export async function addTimelineTaskAction(eventId: string, raw: unknown) {
   const session = await requireSession();
@@ -43,30 +45,25 @@ export async function addTimelineTaskAction(eventId: string, raw: unknown) {
 
 export async function updateTimelineTaskAction(
   taskId: string,
-  raw: Partial<{
-    title: string;
-    description: string | null;
-    dueDate: string | null;
-    status: z.infer<typeof taskStatusSchema>;
-    milestone: boolean;
-  }>,
+  raw: unknown,
 ) {
   const session = await requireSession();
   const task = await getTimelineTaskForUser(taskId, session.user.id);
   if (!task) throw new Error("Task not found");
+  const parsed = updateTimelineTaskSchema.parse(raw);
 
   await db
     .update(timelineTasks)
     .set({
-      ...(raw.title !== undefined ? { title: raw.title } : {}),
-      ...(raw.description !== undefined
-        ? { description: raw.description }
+      ...(parsed.title !== undefined ? { title: parsed.title } : {}),
+      ...(parsed.description !== undefined
+        ? { description: parsed.description }
         : {}),
-      ...(raw.dueDate !== undefined
-        ? { dueDate: raw.dueDate ? new Date(raw.dueDate) : null }
+      ...(parsed.dueDate !== undefined
+        ? { dueDate: parsed.dueDate ? new Date(parsed.dueDate) : null }
         : {}),
-      ...(raw.status !== undefined ? { status: raw.status } : {}),
-      ...(raw.milestone !== undefined ? { milestone: raw.milestone } : {}),
+      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+      ...(parsed.milestone !== undefined ? { milestone: parsed.milestone } : {}),
     })
     .where(eq(timelineTasks.id, taskId));
 
@@ -81,6 +78,20 @@ export async function reorderTimelineTasksAction(
   const session = await requireSession();
   const event = await getEventForUser(eventId, session.user.id);
   if (!event) throw new Error("Event not found");
+  if (orderedIds.length > 200 || new Set(orderedIds).size !== orderedIds.length) {
+    throw new Error("Invalid task ordering");
+  }
+
+  const currentTasks = await db
+    .select({ id: timelineTasks.id })
+    .from(timelineTasks)
+    .where(eq(timelineTasks.eventId, eventId));
+  if (
+    currentTasks.length !== orderedIds.length ||
+    currentTasks.some((task) => !orderedIds.includes(task.id))
+  ) {
+    throw new Error("Task ordering must include every task in this event");
+  }
 
   await Promise.all(
     orderedIds.map((id, index) =>
