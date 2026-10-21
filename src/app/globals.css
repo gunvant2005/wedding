@@ -1,0 +1,247 @@
+@import "tailwindcss";
+
+:root {
+  --background: #09090b;
+  --foreground: #f6f3ed;
+  --ink: #fcfbf7;
+  --ink-soft: #dcd4c3;
+  --muted: #b6ad9c;
+  --surface: #121215;
+  --surface-elevated: #18181c;
+  --surface-glass: rgba(20, 20, 24, 0.72);
+  --border: rgba(197, 160, 89, 0.22);
+  --border-gold: #c5a059;
+  --accent: #c5a059;
+  --accent-hover: #dfb15b;
+  --accent-soft: rgba(197, 160, 89, 0.12);
+  --accent-glow: rgba(212, 175, 55, 0.3);
+  --highlight: #e8c87e;
+  --bronze: #8c6d48;
+  --danger: #e05252;
+  --overdue: #e28a32;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: -0.01em;
+}
+
+/* Page shell with opulent Renaissance dark atmosphere & subtle golden vignettes */
+.page-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(197, 160, 89, 0.14) 0%, transparent 60%),
+    radial-gradient(circle 600px at 85% 20%, rgba(140, 109, 72, 0.08) 0%, transparent 70%),
+    radial-gradient(circle 700px at 15% 70%, rgba(197, 160, 89, 0.06) 0%, transparent 60%),
+    linear-gradient(180deg, #09090b 0%, #0d0d10 40%, #09090b 100%);
+  color: var(--foreground);
+}
+
+/* Luxury Hero Plane with Art Deco geometric watermark and velvet depth */
+.hero-plane {
+  background:
+    radial-gradient(circle 800px at 50% 25%, rgba(212, 175, 55, 0.18) 0%, rgba(11, 11, 13, 0.88) 65%, #09090b 100%),
+    linear-gradient(180deg, rgba(9, 9, 11, 0.3) 0%, #09090b 100%),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23C5A059' fill-opacity='0.04'%3E%3Cpath d='M40 0l40 40-40 40L0 40 40 0zm0 8L8 40l32 32 32-32L40 8zm0 8l24 24-24 24-24-24 24-24z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-size: auto, auto, 80px 80px;
+}
+
+/* Gold foil gradient texts */
+.gold-gradient-text {
+  background: linear-gradient(135deg, #ffffff 0%, #f6e6be 25%, #dfb15b 55%, #c5a059 85%, #9e7d3b 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gold-foil-subtext {
+  background: linear-gradient(135deg, #dfb15b 0%, #c5a059 60%, #8c6d48 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Elegant hairline borders & cards */
+.luxury-card {
+  background: rgba(22, 22, 26, 0.75);
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  backdrop-filter: blur(16px);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.luxury-card:hover {
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: 0 12px 35px -8px rgba(197, 160, 89, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Filigree and crest dividers */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 3rem 0;
+}
+
+.gold-divider::before,
+.gold-divider::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, rgba(197, 160, 89, 0.35), transparent);
+}
+
+/* Animations */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pulse {
+  0%, 100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.04);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+}
+
+.animate-soft-pulse {
+  animation: soft-pulse 4s ease-in-out infinite;
+}
+
+@keyframes gold-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(197, 160, 89, 0) 0%,
+    rgba(223, 177, 91, 0.4) 50%,
+    rgba(197, 160, 89, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: gold-shimmer 3s ease-in-out infinite;
+}
+
+@keyframes float-gentle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.animate-float-gentle {
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+/* Matte White Typography Tokens */
+.text-matte-white {
+  color: #FAF8F5;
+}
+
+.text-matte-subtle {
+  color: #D6D0C2;
+}
+
+.text-matte-muted {
+  color: #B8B09F;
+}
+
+/* Luxury Obsidian & Gold Glass Panels */
+.panel-obsidian {
+  background: rgba(13, 13, 17, 0.88);
+  border: 1px solid rgba(197, 160, 89, 0.22);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.8), 0 0 20px -5px rgba(197, 160, 89, 0.08);
+  backdrop-filter: blur(20px);
+}
+
+.panel-obsidian:hover {
+  border-color: rgba(223, 177, 91, 0.5);
+  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.9), 0 0 30px -5px rgba(223, 177, 91, 0.18);
+}
+
+@keyframes glow-border {
+  0%, 100% {
+    border-color: rgba(197, 160, 89, 0.25);
+  }
+  50% {
+    border-color: rgba(223, 177, 91, 0.65);
+  }
+}
+
+.animate-glow-border {
+  animation: glow-border 4s ease-in-out infinite;
+}
+
+.card-detail {
+  background: rgba(16, 16, 21, 0.85);
+  border: 1px solid rgba(197, 160, 89, 0.2);
+  border-radius: 1rem;
+  backdrop-filter: blur(16px);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-detail:hover {
+  border-color: rgba(223, 177, 91, 0.55);
+  background: rgba(22, 22, 28, 0.92);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.8), 0 0 20px -4px rgba(197, 160, 89, 0.16);
+}
+
+/* Custom scrollbars in dark gold */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(197, 160, 89, 0.25);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 160, 89, 0.5);
+}
+
+
