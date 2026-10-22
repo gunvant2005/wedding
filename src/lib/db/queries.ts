@@ -73,7 +73,8 @@ export const getEventWorkspace = cache(async (eventId: string, userId: string) =
 });
 
 export async function getEventSnapshot(event: Event) {
-  const [[spent], vendors, tasks] = await Promise.all([
+  const now = new Date();
+  const [[spent], [vendorCounts], [taskCounts]] = await Promise.all([
     db
       .select({
         total: sql<number>`coalesce(sum(${budgetItems.actualCents}), 0)`,
@@ -81,33 +82,26 @@ export async function getEventSnapshot(event: Event) {
       .from(budgetItems)
       .where(eq(budgetItems.eventId, event.id)),
     db
-      .select()
+      .select({
+        openVendors: sql<number>`count(*) filter (where ${vendorItems.status} not in ('booked', 'paid'))`,
+      })
       .from(vendorItems)
       .where(eq(vendorItems.eventId, event.id)),
     db
-      .select()
+      .select({
+        totalTasks: sql<number>`count(*)`,
+        overdueTasks: sql<number>`count(*) filter (where ${timelineTasks.status} != 'done' and ${timelineTasks.dueDate} < ${now})`,
+      })
       .from(timelineTasks)
       .where(eq(timelineTasks.eventId, event.id)),
   ]);
 
-  const now = new Date();
-  const overdueTasks = tasks.filter(
-    (t) =>
-      t.status !== "done" &&
-      t.dueDate &&
-      new Date(t.dueDate).getTime() < now.getTime(),
-  ).length;
-
-  const openVendors = vendors.filter(
-    (v) => v.status !== "booked" && v.status !== "paid",
-  ).length;
-
   return {
     event,
     budgetSpentCents: Number(spent?.total ?? 0),
-    openVendors,
-    overdueTasks,
-    taskCount: tasks.length,
+    openVendors: Number(vendorCounts?.openVendors ?? 0),
+    overdueTasks: Number(taskCounts?.overdueTasks ?? 0),
+    taskCount: Number(taskCounts?.totalTasks ?? 0),
   };
 }
 

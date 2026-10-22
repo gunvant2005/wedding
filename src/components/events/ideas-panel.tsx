@@ -28,7 +28,17 @@ export function IdeasPanel({
       });
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as { ideas: EventIdea[] };
-      await saveIdeasAction(eventId, data.ideas.map((i) => ({ title: i.title, description: i.description, categoryTag: i.categoryTag ?? undefined })));
+      const saveRes = await saveIdeasAction(
+        eventId,
+        data.ideas.map((i) => ({
+          title: i.title,
+          description: i.description,
+          categoryTag: i.categoryTag ?? undefined,
+        })),
+      );
+      if (!saveRes.success) {
+        throw new Error(saveRes.error || "Could not save ideas");
+      }
       toast.success("Curated ideas generated");
       router.refresh();
     } catch (err) {

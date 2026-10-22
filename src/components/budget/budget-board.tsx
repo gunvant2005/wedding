@@ -116,10 +116,13 @@ export function BudgetBoard({
             e.preventDefault();
             if (!catName.trim()) return;
             try {
-              await addBudgetCategoryAction(eventId, {
+              const res = await addBudgetCategoryAction(eventId, {
                 name: catName.trim(),
                 allocatedCents: dollarsToCents(catAlloc),
               });
+              if (!res.success) {
+                throw new Error(res.error || "Error adding category");
+              }
               setCatName("");
               setCatAlloc(0);
               toast.success("Category added");
@@ -180,10 +183,17 @@ export function BudgetBoard({
                 size="sm"
                 onClick={async () => {
                   try {
-                    await deleteBudgetCategoryAction(cat.id, eventId);
+                    const res = await deleteBudgetCategoryAction(cat.id, eventId);
+                    if (!res.success) {
+                      throw new Error(res.error || "Unable to delete category");
+                    }
                     router.refresh();
                   } catch (error) {
-                    toast.error(error instanceof Error ? error.message : "Unable to delete category");
+                    toast.error(
+                      error instanceof Error
+                        ? error.message
+                        : "Unable to delete category",
+                    );
                   }
                 }}
               >
@@ -207,10 +217,19 @@ export function BudgetBoard({
                       className="h-7 text-xs text-[#948B79]"
                       onClick={async () => {
                         try {
-                          await deleteBudgetItemAction(item.id);
+                          const res = await deleteBudgetItemAction(item.id);
+                          if (!res.success) {
+                            throw new Error(
+                              res.error || "Unable to delete budget item",
+                            );
+                          }
                           router.refresh();
                         } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Unable to delete budget item");
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to delete budget item",
+                          );
                         }
                       }}
                     >
@@ -229,15 +248,22 @@ export function BudgetBoard({
                 const dollars = Number(form.get("dollars") || 0);
                 if (!name.trim()) return;
                 try {
-                  await addBudgetItemAction(eventId, {
+                  const res = await addBudgetItemAction(eventId, {
                     categoryId: cat.id,
                     name: name.trim(),
                     actualCents: dollarsToCents(dollars),
                   });
+                  if (!res.success) {
+                    throw new Error(res.error || "Unable to add budget item");
+                  }
                   (e.target as HTMLFormElement).reset();
                   router.refresh();
                 } catch (error) {
-                  toast.error(error instanceof Error ? error.message : "Unable to add budget item");
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Unable to add budget item",
+                  );
                 }
               }}
             >

@@ -55,11 +55,14 @@ export function VendorBoard({
         onSubmit={async (e) => {
           e.preventDefault();
           try {
-            await addVendorAction(eventId, {
+            const res = await addVendorAction(eventId, {
               name,
               category,
               status: "researching",
             });
+            if (!res.success) {
+              throw new Error(res.error || "Error adding vendor");
+            }
             setName("");
             toast.success("Vendor added to registry");
             router.refresh();
@@ -115,13 +118,22 @@ export function VendorBoard({
                       value={v.status}
                       onChange={async (e) => {
                         try {
-                          await updateVendorStatusAction(
+                          const res = await updateVendorStatusAction(
                             v.id,
                             e.target.value as VendorItem["status"],
                           );
+                          if (!res.success) {
+                            throw new Error(
+                              res.error || "Unable to update vendor",
+                            );
+                          }
                           router.refresh();
                         } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Unable to update vendor");
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to update vendor",
+                          );
                         }
                       }}
                     >
@@ -137,10 +149,19 @@ export function VendorBoard({
                       className="h-7 text-xs text-[#948B79] hover:text-red-400"
                       onClick={async () => {
                         try {
-                          await deleteVendorAction(v.id);
+                          const res = await deleteVendorAction(v.id);
+                          if (!res.success) {
+                            throw new Error(
+                              res.error || "Unable to delete vendor",
+                            );
+                          }
                           router.refresh();
                         } catch (error) {
-                          toast.error(error instanceof Error ? error.message : "Unable to delete vendor");
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Unable to delete vendor",
+                          );
                         }
                       }}
                     >

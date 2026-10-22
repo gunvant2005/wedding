@@ -92,12 +92,17 @@ function SortableTask({
             value={task.status}
             onChange={async (e) => {
               try {
-                await updateTimelineTaskAction(task.id, {
+                const res = await updateTimelineTaskAction(task.id, {
                   status: e.target.value as TimelineTask["status"],
                 });
+                if (!res.success) {
+                  throw new Error(res.error || "Unable to update task");
+                }
                 onRefresh();
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Unable to update task");
+                toast.error(
+                  error instanceof Error ? error.message : "Unable to update task",
+                );
               }
             }}
           >
@@ -116,10 +121,15 @@ function SortableTask({
             className="h-7 px-2 text-[#948B79] hover:text-red-400"
             onClick={async () => {
               try {
-                await deleteTimelineTaskAction(task.id);
+                const res = await deleteTimelineTaskAction(task.id);
+                if (!res.success) {
+                  throw new Error(res.error || "Unable to delete task");
+                }
                 onRefresh();
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Unable to delete task");
+                toast.error(
+                  error instanceof Error ? error.message : "Unable to delete task",
+                );
               }
             }}
           >
@@ -165,13 +175,18 @@ export function TimelineBoard({
     const next = arrayMove(tasks, oldIndex, newIndex);
     setTasks(next);
     try {
-      await reorderTimelineTasksAction(
+      const res = await reorderTimelineTasksAction(
         eventId,
         next.map((t) => t.id),
       );
+      if (!res.success) {
+        throw new Error(res.error || "Unable to reorder tasks");
+      }
     } catch (error) {
       setTasks(oldTasks);
-      toast.error(error instanceof Error ? error.message : "Unable to reorder tasks");
+      toast.error(
+        error instanceof Error ? error.message : "Unable to reorder tasks",
+      );
     }
   }
 
@@ -183,15 +198,20 @@ export function TimelineBoard({
           e.preventDefault();
           if (!title.trim()) return;
           try {
-            await addTimelineTaskAction(eventId, {
+            const res = await addTimelineTaskAction(eventId, {
               title: title.trim(),
               status: "todo",
               position: tasks.length,
             });
+            if (!res.success) {
+              throw new Error(res.error || "Unable to add task");
+            }
             setTitle("");
             refresh();
           } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Unable to add task");
+            toast.error(
+              error instanceof Error ? error.message : "Unable to add task",
+            );
           }
         }}
       >

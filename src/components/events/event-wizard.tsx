@@ -99,8 +99,12 @@ export function EventWizard() {
         plan ?? null,
       );
 
+      if (!res.success) {
+        throw new Error(res.error || "Creation failed");
+      }
+
       toast.success("Bespoke event orchestrated");
-      router.push(`/events/${res.eventId}`);
+      router.push(`/events/${res.data?.eventId}`);
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Creation failed");
@@ -110,12 +114,19 @@ export function EventWizard() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl rounded-2xl border border-[rgba(197,160,89,0.3)] bg-[#121216]/90 p-8 shadow-2xl backdrop-blur-xl">
+    <div
+      className="mx-auto max-w-2xl rounded-2xl border border-[rgba(197,160,89,0.3)] bg-[#121216]/90 p-8 shadow-2xl backdrop-blur-xl"
+      role="main"
+      aria-labelledby="wizard-title"
+    >
       <div className="mb-6 flex items-center justify-between border-b border-[rgba(197,160,89,0.18)] pb-4">
-        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#C5A059]">
+        <span
+          className="text-[10px] font-semibold uppercase tracking-[0.25em] text-[#C5A059]"
+          aria-hidden="true"
+        >
           Phase {step + 1} of 3
         </span>
-        <span className="text-xs text-[#948B79]">
+        <span className="text-xs text-[#948B79]" role="status" aria-live="polite">
           {step === 0 && "Curated Format"}
           {step === 1 && "Atelier Specifications"}
           {step === 2 && "Plan Review"}
@@ -124,77 +135,96 @@ export function EventWizard() {
 
       {step === 0 && (
         <div className="space-y-6">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]">
+          <h1
+            id="wizard-title"
+            className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]"
+          >
             Select Celebration Format
           </h1>
-          <div className="grid gap-4">
+          <div className="grid gap-4" role="radiogroup" aria-label="Celebration format">
             {TYPES.map((t) => (
               <button
                 key={t.id}
                 type="button"
-                aria-pressed={form.type === t.id}
+                role="radio"
+                aria-checked={form.type === t.id}
                 onClick={() => setForm((f) => ({ ...f, type: t.id }))}
                 className={
                   form.type === t.id
-                    ? "rounded-xl border border-[#C5A059] bg-[#C5A059]/15 p-5 text-left shadow-[0_0_20px_rgba(197,160,89,0.15)] transition-all cursor-pointer"
-                    : "rounded-xl border border-[rgba(197,160,89,0.2)] bg-[#141418] p-5 text-left hover:border-[#C5A059]/50 transition-all cursor-pointer"
+                    ? "rounded-xl border border-[#C5A059] bg-[#C5A059]/15 p-5 text-left shadow-[0_0_20px_rgba(197,160,89,0.15)] transition-all cursor-pointer ring-2 ring-[#C5A059]/50"
+                    : "rounded-xl border border-[rgba(197,160,89,0.2)] bg-[#141418] p-5 text-left hover:border-[#C5A059]/50 transition-all cursor-pointer focus-visible:ring-2 focus-visible:ring-[#C5A059]/50"
                 }
               >
                 <div className="flex items-center gap-3">
-                  <t.icon className="h-5 w-5 text-[#DFB15B]" />
-                  <p className="font-[family-name:var(--font-display)] text-xl text-[#FCFBF7]">{t.title}</p>
+                  <t.icon className="h-5 w-5 text-[#DFB15B]" aria-hidden="true" />
+                  <p className="font-[family-name:var(--font-display)] text-xl text-[#FCFBF7]">
+                    {t.title}
+                  </p>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-[#948B79]">{t.blurb}</p>
               </button>
             ))}
           </div>
-          <Button className="w-full" onClick={() => setStep(1)}>
+          <Button
+            className="w-full"
+            onClick={() => setStep(1)}
+            aria-label="Continue to Specifications"
+          >
             Continue to Specifications
           </Button>
         </div>
       )}
 
       {step === 1 && (
-        <div className="space-y-5">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]">
+        <div className="space-y-5" role="form" aria-labelledby="step-1-title">
+          <h1
+            id="step-1-title"
+            className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]"
+          >
             Celebration Specifications
           </h1>
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Celebration Title</Label>
+            <Label htmlFor="title" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+              Celebration Title
+            </Label>
             <Input
               id="title"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="e.g. Burkay & Eleonora Wedding Gala"
+              aria-required="true"
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="date" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Date</Label>
+              <Label htmlFor="date" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+                Date
+              </Label>
               <Input
                 id="date"
                 type="date"
                 value={form.eventDate}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, eventDate: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, eventDate: e.target.value }))}
+                aria-required="true"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="loc" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Estate / Venue Location</Label>
+              <Label htmlFor="loc" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+                Estate / Venue Location
+              </Label>
               <Input
                 id="loc"
                 value={form.location}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, location: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
                 placeholder="e.g. Villa d'Este, Lake Como"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="budget" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Estimated Budget ($)</Label>
+              <Label htmlFor="budget" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+                Estimated Budget ($)
+              </Label>
               <Input
                 id="budget"
                 type="number"
@@ -209,20 +239,22 @@ export function EventWizard() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="guests" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Guest Count</Label>
+              <Label htmlFor="guests" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+                Guest Count
+              </Label>
               <Input
                 id="guests"
                 type="number"
                 min={1}
                 value={form.guestCount}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, guestCount: Number(e.target.value) }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, guestCount: Number(e.target.value) }))}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="theme" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Design & Floral Palette</Label>
+            <Label htmlFor="theme" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+              Design & Floral Palette
+            </Label>
             <Input
               id="theme"
               value={form.theme}
@@ -231,7 +263,9 @@ export function EventWizard() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="notes" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Atelier Vision & Wishes</Label>
+            <Label htmlFor="notes" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+              Atelier Vision & Wishes
+            </Label>
             <Textarea
               id="notes"
               value={form.notes}
@@ -240,7 +274,7 @@ export function EventWizard() {
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={() => setStep(0)}>
+            <Button variant="outline" onClick={() => setStep(0)} aria-label="Go back to format selection">
               Back
             </Button>
             <Button
@@ -257,8 +291,9 @@ export function EventWizard() {
                 loadingPlan
               }
               onClick={generatePlan}
+              aria-busy={loadingPlan}
             >
-              <Sparkles className="h-4 w-4" />
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
               {loadingPlan ? "Orchestrating Plan..." : "Generate AI Plan"}
             </Button>
           </div>
@@ -266,36 +301,48 @@ export function EventWizard() {
       )}
 
       {step === 2 && (
-        <div className="space-y-5">
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]">
+        <div className="space-y-5" aria-labelledby="step-2-title">
+          <h1
+            id="step-2-title"
+            className="font-[family-name:var(--font-display)] text-3xl text-[#FCFBF7]"
+          >
             Review & Orchestrate
           </h1>
           <div className="rounded-xl border border-[rgba(197,160,89,0.25)] bg-[#101014] p-4 text-xs">
-            <p className="font-[family-name:var(--font-display)] text-xl text-[#FCFBF7]">{form.title}</p>
+            <h2 className="font-[family-name:var(--font-display)] text-xl text-[#FCFBF7]">{form.title}</h2>
             <p className="mt-1 text-[#948B79]">
-              {form.type} · {form.eventDate} · {formatCurrency(dollarsToCents(form.budgetDollars))} · {form.guestCount} guests
+              {form.type} · {form.eventDate} · {formatCurrency(dollarsToCents(form.budgetDollars))} ·{" "}
+              {form.guestCount} guests
             </p>
-            {planSource && (
-              <Badge className="mt-2">Plan Source: {planSource.toUpperCase()}</Badge>
-            )}
+            {planSource && <Badge className="mt-2">Plan Source: {planSource.toUpperCase()}</Badge>}
           </div>
 
           {plan && (
             <div className="space-y-3 text-xs">
-              <div className="rounded-xl border border-[rgba(197,160,89,0.18)] bg-[#101014] p-4">
-                <p className="font-semibold text-[#DFB15B]">Couture Timeline ({plan.timelineTasks.length} Milestones)</p>
+              <div
+                className="rounded-xl border border-[rgba(197,160,89,0.18)] bg-[#101014] p-4"
+                role="region"
+                aria-label="Timeline Milestones"
+              >
+                <p className="font-semibold text-[#DFB15B]">
+                  Couture Timeline ({plan.timelineTasks.length} Milestones)
+                </p>
                 <ul className="mt-2 list-disc space-y-1 pl-4 text-[#DCD4C3]">
-                  {plan.timelineTasks.slice(0, 6).map((t: { title: string; daysBeforeEvent: number }) => (
-                    <li key={t.title}>
-                      {t.title}{" "}
-                      <span className="text-[#948B79]">
-                        ({t.daysBeforeEvent}d prior)
-                      </span>
-                    </li>
-                  ))}
+                  {plan.timelineTasks
+                    .slice(0, 6)
+                    .map((t: { title: string; daysBeforeEvent: number }) => (
+                      <li key={t.title}>
+                        {t.title}{" "}
+                        <span className="text-[#948B79]">({t.daysBeforeEvent}d prior)</span>
+                      </li>
+                    ))}
                 </ul>
               </div>
-              <div className="rounded-xl border border-[rgba(197,160,89,0.18)] bg-[#101014] p-4">
+              <div
+                className="rounded-xl border border-[rgba(197,160,89,0.18)] bg-[#101014] p-4"
+                role="region"
+                aria-label="Budget Allocations"
+              >
                 <p className="font-semibold text-[#DFB15B]">
                   Budget Allocations ({plan.budgetCategories.length} Categories)
                 </p>
@@ -311,13 +358,14 @@ export function EventWizard() {
           )}
 
           <div className="flex gap-3 pt-2">
-            <Button variant="outline" onClick={() => setStep(1)}>
+            <Button variant="outline" onClick={() => setStep(1)} aria-label="Modify event specifications">
               Modify Specs
             </Button>
             <Button
               className="flex-1"
               disabled={creating}
               onClick={handleFinalCreate}
+              aria-busy={creating}
             >
               {creating ? "Saving Atelier Event..." : "Launch Event Workspace"}
             </Button>

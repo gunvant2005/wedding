@@ -14,12 +14,15 @@ export function DeleteEventButton({ eventId }: { eventId: string }) {
       onClick={async () => {
         if (!confirm("Delete this event and all related data?")) return;
         try {
-          await deleteEventAction(eventId);
+          const res = await deleteEventAction(eventId);
+          if (!res.success) {
+            throw new Error(res.error || "Could not delete event");
+          }
           toast.success("Event deleted");
           router.push("/dashboard");
           router.refresh();
-        } catch {
-          toast.error("Could not delete event");
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Could not delete event");
         }
       }}
     >

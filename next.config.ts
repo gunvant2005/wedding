@@ -52,26 +52,11 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), clipboard-read=(), payment=()",
+            value: "camera=(), microphone=(), geolocation=()",
           },
           {
             key: "X-DNS-Prefetch-Control",
             value: "on",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob:",
-              "connect-src 'self' https://*.neon.tech wss://*.neon.tech https://generativelanguage.googleapis.com",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "upgrade-insecure-requests",
-            ].join("; "),
           },
         ],
       },

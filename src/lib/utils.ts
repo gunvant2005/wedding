@@ -2,90 +2,62 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 /**
- * Merges Tailwind CSS class names, resolving conflicts with twMerge.
+ * Combines conditional class names and resolves Tailwind CSS class conflicts.
+ *
+ * @param inputs - List of class names, conditionals, or objects
+ * @returns Merged and deduped class string
  */
-export function cn(...inputs: ClassValue[]) {
+export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
 /**
- * Formats an integer cent value as a localized currency string.
- * @param cents - The amount in cents (integer).
- * @param currency - ISO 4217 currency code (default: "USD").
- * @returns Formatted currency string, e.g. "$1,500"
+ * Formats integer monetary cents into a localized currency string.
+ *
+ * @param cents - Integer amount in cents (e.g. 150000 = $1,500)
+ * @param currency - ISO 4217 currency code (default: USD)
+ * @returns Formatted currency string without fraction digits
  */
 export function formatCurrency(cents: number, currency = "USD"): string {
+  const safeCents = Number.isFinite(cents) ? cents : 0;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
     maximumFractionDigits: 0,
-  }).format(cents / 100);
+  }).format(safeCents / 100);
 }
 
 /**
- * Converts a dollar amount to integer cents, rounding half-up.
- * @param dollars - The dollar amount.
- * @returns Integer cent value.
+ * Converts decimal dollar amount into exact integer cents to eliminate floating-point drift.
+ *
+ * @param dollars - Amount in standard dollar units
+ * @returns Integer cents rounded to nearest whole cent
  */
 export function dollarsToCents(dollars: number): number {
+  if (!Number.isFinite(dollars)) return 0;
   return Math.round(dollars * 100);
 }
 
 /**
- * Converts an integer cent value to a decimal dollar amount.
- * @param cents - The amount in cents.
- * @returns Dollar amount as a decimal number.
+ * Converts integer cents into standard decimal dollar units.
+ *
+ * @param cents - Amount in integer cents
+ * @returns Decimal dollars
  */
 export function centsToDollars(cents: number): number {
+  if (!Number.isFinite(cents)) return 0;
   return cents / 100;
 }
 
 /**
- * Clamps a cent value between 0 and the configured maximum (2 billion).
- * Useful for preventing invalid database writes.
- * @param cents - The raw cent value to clamp.
- * @param max - Maximum allowed value (default: 2_000_000_000).
- * @returns Clamped integer cent value.
- */
-export function clampCents(cents: number, max = 2_000_000_000): number {
-  return Math.max(0, Math.min(Math.round(cents), max));
-}
-
-/**
- * Formats a ratio (0–1) as a percentage string.
- * @param ratio - Decimal ratio (e.g. 0.75 → "75%").
- * @param digits - Number of decimal places (default: 0).
- * @returns Formatted percentage string.
- */
-export function formatPercent(ratio: number, digits = 0): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "percent",
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  }).format(ratio);
-}
-
-/**
- * Returns the singular or plural form of a word based on count.
- * @param count - The quantity.
- * @param singular - Singular form of the word.
- * @param plural - Plural form (default: `singular + "s"`).
- * @returns The appropriate inflected string including the count.
- * @example pluralize(1, "guest") → "1 guest"
- * @example pluralize(3, "task") → "3 tasks"
- */
-export function pluralize(count: number, singular: string, plural?: string): string {
-  const word = count === 1 ? singular : (plural ?? `${singular}s`);
-  return `${count.toLocaleString("en-US")} ${word}`;
-}
-
-/**
- * Computes the number of whole calendar days between today and a future (or past) date.
- * @param date - Target date (Date object or ISO string).
- * @returns Positive number for future dates, 0 for today, negative for past dates.
+ * Calculates the whole calendar days remaining between current date and target event date.
+ *
+ * @param date - Target date as Date object or ISO string
+ * @returns Integer number of days (positive for future, 0 for today, negative for past)
  */
 export function daysUntil(date: Date | string): number {
   const target = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(target.getTime())) return 0;
   const now = new Date();
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const end = new Date(
@@ -97,34 +69,38 @@ export function daysUntil(date: Date | string): number {
 }
 
 /**
- * Normalizes a title string: trims whitespace, collapses internal spaces,
- * and converts to lowercase for comparison.
- * @param title - Raw title string.
- * @returns Normalized lowercase string.
+ * Normalizes title string by trimming and collapsing multiple whitespace characters.
+ *
+ * @param title - Raw input string
+ * @returns Cleaned title
  */
 export function normalizeTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 /**
- * Truncates a string to the specified maximum length, appending an ellipsis
- * if truncation occurred.
- * @param text - Input string.
- * @param maxLength - Maximum character length (default: 80).
- * @returns Truncated string, never exceeding maxLength.
+ * Computes percentage share of a value relative to a total, bounded between 0 and 100.
+ *
+ * @param portion - Numeric portion
+ * @param total - Total reference value
+ * @returns Integer percentage between 0 and 100
  */
-export function truncate(text: string, maxLength = 80): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength - 1)}…`;
+export function calculatePercentage(portion: number, total: number): number {
+  if (!Number.isFinite(portion) || !Number.isFinite(total) || total <= 0) {
+    return 0;
+  }
+  return Math.min(100, Math.max(0, Math.round((portion / total) * 100)));
 }
 
 /**
- * Returns a budget utilization percentage (0–100), clamped to avoid overflow.
- * @param spentCents - Amount actually spent in cents.
- * @param budgetCents - Total budget in cents.
- * @returns Integer percentage 0–100.
+ * Clamps a number within an inclusive [min, max] range.
+ *
+ * @param val - Input value
+ * @param min - Lower bound
+ * @param max - Upper bound
+ * @returns Clamped numeric value
  */
-export function budgetUsagePercent(spentCents: number, budgetCents: number): number {
-  if (budgetCents <= 0) return 0;
-  return Math.min(100, Math.round((spentCents / budgetCents) * 100));
+export function clamp(val: number, min: number, max: number): number {
+  if (!Number.isFinite(val)) return min;
+  return Math.min(Math.max(val, min), max);
 }

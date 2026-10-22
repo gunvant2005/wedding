@@ -17,113 +17,133 @@ import {
 } from "@/lib/validations/event";
 import { normalizeTitle } from "@/lib/utils";
 
+import { createAction, type ActionResponse } from "./utils";
+
 export async function createEventAction(
   raw: unknown,
   aiPlan?: AiPlan | null,
-) {
-  const session = await requireSession();
-  const parsed = createEventSchema.parse(raw);
-  const validatedPlan = aiPlan ? aiPlanSchema.parse(aiPlan) : null;
-  const eventId = await createEventFromInput(
-    session.user.id,
-    parsed,
-    validatedPlan,
-  );
-  revalidatePath("/dashboard");
-  return { eventId };
+): Promise<ActionResponse<{ eventId: string }>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const parsed = createEventSchema.parse(raw);
+    const validatedPlan = aiPlan ? aiPlanSchema.parse(aiPlan) : null;
+    const eventId = await createEventFromInput(
+      session.user.id,
+      parsed,
+      validatedPlan,
+    );
+    revalidatePath("/dashboard");
+    return { eventId };
+  });
 }
 
-export async function updateEventAction(eventId: string, raw: unknown) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+export async function updateEventAction(
+  eventId: string,
+  raw: unknown,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  const parsed = updateEventSchema.parse(raw);
-  await db
-    .update(events)
-    .set({
-      ...(parsed.title !== undefined ? { title: parsed.title } : {}),
-      ...(parsed.type !== undefined ? { type: parsed.type } : {}),
-      ...(parsed.eventDate !== undefined
-        ? { eventDate: new Date(parsed.eventDate) }
-        : {}),
-      ...(parsed.location !== undefined ? { location: parsed.location } : {}),
-      ...(parsed.guestCount !== undefined
-        ? { guestCount: parsed.guestCount }
-        : {}),
-      ...(parsed.budgetTotalCents !== undefined
-        ? { budgetTotalCents: parsed.budgetTotalCents }
-        : {}),
-      ...(parsed.theme !== undefined ? { theme: parsed.theme } : {}),
-      ...(parsed.notes !== undefined ? { notes: parsed.notes } : {}),
-      ...(parsed.status !== undefined ? { status: parsed.status } : {}),
-      updatedAt: new Date(),
-    })
-    .where(and(eq(events.id, eventId), eq(events.userId, session.user.id)));
+    const parsed = updateEventSchema.parse(raw);
+    await db
+      .update(events)
+      .set({
+        ...(parsed.title !== undefined ? { title: parsed.title } : {}),
+        ...(parsed.type !== undefined ? { type: parsed.type } : {}),
+        ...(parsed.eventDate !== undefined
+          ? { eventDate: new Date(parsed.eventDate) }
+          : {}),
+        ...(parsed.location !== undefined ? { location: parsed.location } : {}),
+        ...(parsed.guestCount !== undefined
+          ? { guestCount: parsed.guestCount }
+          : {}),
+        ...(parsed.budgetTotalCents !== undefined
+          ? { budgetTotalCents: parsed.budgetTotalCents }
+          : {}),
+        ...(parsed.theme !== undefined ? { theme: parsed.theme } : {}),
+        ...(parsed.notes !== undefined ? { notes: parsed.notes } : {}),
+        ...(parsed.status !== undefined ? { status: parsed.status } : {}),
+        updatedAt: new Date(),
+      })
+      .where(and(eq(events.id, eventId), eq(events.userId, session.user.id)));
 
-  revalidatePath(`/events/${eventId}`);
-  revalidatePath("/dashboard");
+    revalidatePath(`/events/${eventId}`);
+    revalidatePath("/dashboard");
+  });
 }
 
-export async function deleteEventAction(eventId: string) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+export async function deleteEventAction(
+  eventId: string,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  await db
-    .delete(events)
-    .where(and(eq(events.id, eventId), eq(events.userId, session.user.id)));
+    await db
+      .delete(events)
+      .where(and(eq(events.id, eventId), eq(events.userId, session.user.id)));
 
-  revalidatePath("/dashboard");
+    revalidatePath("/dashboard");
+  });
 }
 
 export async function saveIdeasAction(
   eventId: string,
   rawIdeas: unknown,
-) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
-  const ideas = eventIdeasSchema.parse(rawIdeas);
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
+    const ideas = eventIdeasSchema.parse(rawIdeas);
 
-  const existing = await db
-    .select()
-    .from(eventIdeas)
-    .where(eq(eventIdeas.eventId, eventId));
+    const existing = await db
+      .select()
+      .from(eventIdeas)
+      .where(eq(eventIdeas.eventId, eventId));
 
-  const existingTitles = new Set(
-    existing.map((i) => normalizeTitle(i.title)),
-  );
+    const existingTitles = new Set(
+      existing.map((i) => normalizeTitle(i.title)),
+    );
 
-  const toInsert: (typeof eventIdeas.$inferInsert)[] = [];
-  for (const idea of ideas) {
-    if (existingTitles.has(normalizeTitle(idea.title))) continue;
-    toInsert.push({
-      id: nanoid(),
-      eventId,
-      title: idea.title,
-      description: idea.description,
-      categoryTag: idea.categoryTag ?? null,
-      dismissed: false,
-    });
-  }
+    const toInsert: (typeof eventIdeas.$inferInsert)[] = [];
+    for (const idea of ideas) {
+      if (existingTitles.has(normalizeTitle(idea.title))) continue;
+      toInsert.push({
+        id: nanoid(),
+        eventId,
+        title: idea.title,
+        description: idea.description,
+        categoryTag: idea.categoryTag ?? null,
+        dismissed: false,
+      });
+    }
 
-  if (toInsert.length > 0) {
-    await db.insert(eventIdeas).values(toInsert);
-  }
+    if (toInsert.length > 0) {
+      await db.insert(eventIdeas).values(toInsert);
+    }
 
-  revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${eventId}`);
+  });
 }
 
-export async function dismissIdeaAction(ideaId: string, eventId: string) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+export async function dismissIdeaAction(
+  ideaId: string,
+  eventId: string,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  await db
-    .update(eventIdeas)
-    .set({ dismissed: true })
-    .where(and(eq(eventIdeas.id, ideaId), eq(eventIdeas.eventId, eventId)));
+    await db
+      .update(eventIdeas)
+      .set({ dismissed: true })
+      .where(and(eq(eventIdeas.id, ideaId), eq(eventIdeas.eventId, eventId)));
 
-  revalidatePath(`/events/${eventId}`);
+    revalidatePath(`/events/${eventId}`);
+  });
 }

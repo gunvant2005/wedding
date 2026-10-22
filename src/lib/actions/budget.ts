@@ -17,132 +17,159 @@ import {
   updateBudgetItemSchema,
 } from "@/lib/validations/event";
 
-export async function addBudgetCategoryAction(eventId: string, raw: unknown) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+import { createAction, type ActionResponse } from "./utils";
 
-  const [maxRow] = await db
-    .select({
-      maxSort: sql<number>`coalesce(max(${budgetCategories.sortOrder}), -1)`,
-    })
-    .from(budgetCategories)
-    .where(eq(budgetCategories.eventId, eventId));
-  const nextSort = Number(maxRow?.maxSort ?? -1) + 1;
+export async function addBudgetCategoryAction(
+  eventId: string,
+  raw: unknown,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  const parsed = budgetCategorySchema.parse(raw);
-  await db.insert(budgetCategories).values({
-    id: nanoid(),
-    eventId,
-    name: parsed.name,
-    allocatedCents: parsed.allocatedCents,
-    sortOrder: nextSort,
+    const [maxRow] = await db
+      .select({
+        maxSort: sql<number>`coalesce(max(${budgetCategories.sortOrder}), -1)`,
+      })
+      .from(budgetCategories)
+      .where(eq(budgetCategories.eventId, eventId));
+    const nextSort = Number(maxRow?.maxSort ?? -1) + 1;
+
+    const parsed = budgetCategorySchema.parse(raw);
+    await db.insert(budgetCategories).values({
+      id: nanoid(),
+      eventId,
+      name: parsed.name,
+      allocatedCents: parsed.allocatedCents,
+      sortOrder: nextSort,
+    });
+    revalidatePath(`/events/${eventId}/budget`);
   });
-  revalidatePath(`/events/${eventId}/budget`);
 }
 
 export async function updateBudgetCategoryAction(
   categoryId: string,
   eventId: string,
   raw: unknown,
-) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
-  const parsed = updateBudgetCategorySchema.parse(raw);
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
+    const parsed = updateBudgetCategorySchema.parse(raw);
 
-  await db
-    .update(budgetCategories)
-    .set({
-      ...(parsed.name !== undefined ? { name: parsed.name } : {}),
-      ...(parsed.allocatedCents !== undefined
-        ? { allocatedCents: parsed.allocatedCents }
-        : {}),
-    })
-    .where(
-      and(
-        eq(budgetCategories.id, categoryId),
-        eq(budgetCategories.eventId, eventId),
-      ),
-    );
-  revalidatePath(`/events/${eventId}/budget`);
+    await db
+      .update(budgetCategories)
+      .set({
+        ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+        ...(parsed.allocatedCents !== undefined
+          ? { allocatedCents: parsed.allocatedCents }
+          : {}),
+      })
+      .where(
+        and(
+          eq(budgetCategories.id, categoryId),
+          eq(budgetCategories.eventId, eventId),
+        ),
+      );
+    revalidatePath(`/events/${eventId}/budget`);
+  });
 }
 
 export async function deleteBudgetCategoryAction(
   categoryId: string,
   eventId: string,
-) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  await db
-    .delete(budgetCategories)
-    .where(
-      and(
-        eq(budgetCategories.id, categoryId),
-        eq(budgetCategories.eventId, eventId),
-      ),
-    );
-  revalidatePath(`/events/${eventId}/budget`);
+    await db
+      .delete(budgetCategories)
+      .where(
+        and(
+          eq(budgetCategories.id, categoryId),
+          eq(budgetCategories.eventId, eventId),
+        ),
+      );
+    revalidatePath(`/events/${eventId}/budget`);
+  });
 }
 
-export async function addBudgetItemAction(eventId: string, raw: unknown) {
-  const session = await requireSession();
-  const event = await getEventForUser(eventId, session.user.id);
-  if (!event) throw new Error("Event not found");
+export async function addBudgetItemAction(
+  eventId: string,
+  raw: unknown,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const event = await getEventForUser(eventId, session.user.id);
+    if (!event) throw new Error("Event not found");
 
-  const parsed = budgetItemSchema.parse(raw);
-  const [category] = await db
-    .select({ id: budgetCategories.id })
-    .from(budgetCategories)
-    .where(and(eq(budgetCategories.id, parsed.categoryId), eq(budgetCategories.eventId, eventId)))
-    .limit(1);
-  if (!category) throw new Error("Budget category not found in this event");
-  await db.insert(budgetItems).values({
-    id: nanoid(),
-    eventId,
-    categoryId: parsed.categoryId,
-    name: parsed.name,
-    estimatedCents: parsed.estimatedCents,
-    actualCents: parsed.actualCents,
-    paid: parsed.paid,
+    const parsed = budgetItemSchema.parse(raw);
+    const [category] = await db
+      .select({ id: budgetCategories.id })
+      .from(budgetCategories)
+      .where(
+        and(
+          eq(budgetCategories.id, parsed.categoryId),
+          eq(budgetCategories.eventId, eventId),
+        ),
+      )
+      .limit(1);
+    if (!category) throw new Error("Budget category not found in this event");
+    await db.insert(budgetItems).values({
+      id: nanoid(),
+      eventId,
+      categoryId: parsed.categoryId,
+      name: parsed.name,
+      estimatedCents: parsed.estimatedCents,
+      actualCents: parsed.actualCents,
+      paid: parsed.paid,
+    });
+    revalidatePath(`/events/${eventId}/budget`);
   });
-  revalidatePath(`/events/${eventId}/budget`);
 }
 
 export async function updateBudgetItemAction(
   itemId: string,
   raw: unknown,
-) {
-  const session = await requireSession();
-  const item = await getBudgetItemForUser(itemId, session.user.id);
-  if (!item) throw new Error("Item not found");
-  const parsed = updateBudgetItemSchema.parse(raw);
+): Promise<ActionResponse<{ eventId: string }>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const item = await getBudgetItemForUser(itemId, session.user.id);
+    if (!item) throw new Error("Item not found");
+    const parsed = updateBudgetItemSchema.parse(raw);
 
-  await db
-    .update(budgetItems)
-    .set({
-      ...(parsed.name !== undefined ? { name: parsed.name } : {}),
-      ...(parsed.estimatedCents !== undefined
-        ? { estimatedCents: parsed.estimatedCents }
-        : {}),
-      ...(parsed.actualCents !== undefined
-        ? { actualCents: parsed.actualCents }
-        : {}),
-      ...(parsed.paid !== undefined ? { paid: parsed.paid } : {}),
-    })
-    .where(eq(budgetItems.id, itemId));
+    await db
+      .update(budgetItems)
+      .set({
+        ...(parsed.name !== undefined ? { name: parsed.name } : {}),
+        ...(parsed.estimatedCents !== undefined
+          ? { estimatedCents: parsed.estimatedCents }
+          : {}),
+        ...(parsed.actualCents !== undefined
+          ? { actualCents: parsed.actualCents }
+          : {}),
+        ...(parsed.paid !== undefined ? { paid: parsed.paid } : {}),
+      })
+      .where(eq(budgetItems.id, itemId));
 
-  revalidatePath(`/events/${item.eventId}/budget`);
-  return { eventId: item.eventId };
+    revalidatePath(`/events/${item.eventId}/budget`);
+    return { eventId: item.eventId };
+  });
 }
 
-export async function deleteBudgetItemAction(itemId: string) {
-  const session = await requireSession();
-  const item = await getBudgetItemForUser(itemId, session.user.id);
-  if (!item) throw new Error("Item not found");
+export async function deleteBudgetItemAction(
+  itemId: string,
+): Promise<ActionResponse<void>> {
+  return createAction(async () => {
+    const session = await requireSession();
+    const item = await getBudgetItemForUser(itemId, session.user.id);
+    if (!item) throw new Error("Item not found");
 
-  await db.delete(budgetItems).where(eq(budgetItems.id, itemId));
-  revalidatePath(`/events/${item.eventId}/budget`);
+    await db.delete(budgetItems).where(eq(budgetItems.id, itemId));
+    revalidatePath(`/events/${item.eventId}/budget`);
+  });
 }

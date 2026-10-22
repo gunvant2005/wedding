@@ -110,7 +110,8 @@ export async function POST(req: Request) {
           if (!item || item.eventId !== eventId) {
             throw new Error("Budget item not found in this event");
           }
-          await updateBudgetItemAction(args.itemId, args);
+          const res = await updateBudgetItemAction(args.itemId, args);
+          if (!res.success) throw new Error(res.error);
           return { ok: true, ...args };
         },
       }),
@@ -127,13 +128,14 @@ export async function POST(req: Request) {
           milestone: z.boolean().optional(),
         }),
         execute: async (args) => {
-          await addTimelineTaskAction(eventId, {
+          const res = await addTimelineTaskAction(eventId, {
             title: args.title,
             description: args.description,
             dueDate: args.dueDate,
             status: "todo",
             milestone: args.milestone ?? false,
           });
+          if (!res.success) throw new Error(res.error);
           return { ok: true, ...args };
         },
       }),
@@ -148,7 +150,8 @@ export async function POST(req: Request) {
           if (!vendor || vendor.eventId !== eventId) {
             throw new Error("Vendor not found in this event");
           }
-          await updateVendorStatusAction(args.vendorId, args.status);
+          const res = await updateVendorStatusAction(args.vendorId, args.status);
+          if (!res.success) throw new Error(res.error);
           return { ok: true, ...args };
         },
       }),
