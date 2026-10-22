@@ -1,5 +1,16 @@
 import assert from "node:assert";
-import { formatCurrency, centsToDollars, dollarsToCents, daysUntil } from "../src/lib/utils";
+import {
+  formatCurrency,
+  centsToDollars,
+  dollarsToCents,
+  daysUntil,
+  clampCents,
+  formatPercent,
+  pluralize,
+  truncate,
+  budgetUsagePercent,
+  normalizeTitle,
+} from "../src/lib/utils";
 import { sanitizeForPrompt, delimitUserContent } from "../src/lib/security/sanitize";
 import { verifyCsrf } from "../src/lib/security/csrf";
 import { readJsonBody } from "../src/lib/security/request-body";
@@ -412,6 +423,126 @@ test("verifyCsrf supports Referer header when Origin header is absent", () => {
     },
   });
   assert.strictEqual(verifyCsrf(maliciousReq), false);
+});
+
+// 10. New Utility Functions
+test("clampCents returns 0 for negative input and caps at max", () => {
+  assert.strictEqual(clampCents(-500), 0);
+  assert.strictEqual(clampCents(0), 0);
+  assert.strictEqual(clampCents(5000), 5000);
+  assert.strictEqual(clampCents(3_000_000_000), 2_000_000_000);
+  assert.strictEqual(clampCents(1_000_000, 500_000), 500_000);
+});
+
+test("clampCents rounds floating point cent values", () => {
+  assert.strictEqual(clampCents(99.7), 100);
+  assert.strictEqual(clampCents(99.2), 99);
+});
+
+test("formatPercent formats ratio correctly with 0 and 2 decimal places", () => {
+  assert.strictEqual(formatPercent(0.75), "75%");
+  assert.strictEqual(formatPercent(0), "0%");
+  assert.strictEqual(formatPercent(1), "100%");
+  assert.strictEqual(formatPercent(0.3333, 2), "33.33%");
+});
+
+test("pluralize inflects correctly for singular and plural counts", () => {
+  assert.strictEqual(pluralize(1, "guest"), "1 guest");
+  assert.strictEqual(pluralize(3, "guest"), "3 guests");
+  assert.strictEqual(pluralize(0, "task"), "0 tasks");
+  assert.strictEqual(pluralize(1, "category", "categories"), "1 category");
+  assert.strictEqual(pluralize(5, "category", "categories"), "5 categories");
+});
+
+test("truncate returns original string when within maxLength", () => {
+  assert.strictEqual(truncate("hello", 10), "hello");
+  assert.strictEqual(truncate("hello", 5), "hello");
+});
+
+test("truncate appends ellipsis when string exceeds maxLength", () => {
+  const result = truncate("hello world", 8);
+  assert.ok(result.length <= 8);
+  assert.ok(result.endsWith("…"));
+});
+
+test("budgetUsagePercent returns 0 when budget is 0 or negative", () => {
+  assert.strictEqual(budgetUsagePercent(5000, 0), 0);
+  assert.strictEqual(budgetUsagePercent(0, 0), 0);
+});
+
+test("budgetUsagePercent computes correct percentage and caps at 100", () => {
+  assert.strictEqual(budgetUsagePercent(5000, 10000), 50);
+  assert.strictEqual(budgetUsagePercent(10000, 10000), 100);
+  assert.strictEqual(budgetUsagePercent(15000, 10000), 100); // clamped
+  assert.strictEqual(budgetUsagePercent(1, 3), 33);
+});
+
+test("normalizeTitle trims, lowercases, and collapses whitespace", () => {
+  assert.strictEqual(normalizeTitle("  Lake Como  "), "lake como");
+  assert.strictEqual(normalizeTitle("Garden  Wedding"), "garden wedding");
+  assert.strictEqual(normalizeTitle("UPPERCASE"), "uppercase");
+  assert.strictEqual(normalizeTitle("  Multiple   Spaces  "), "multiple spaces");
+});
+
+// 11. Sanitization Edge Cases
+test("sanitizeForPrompt handles empty string without throwing", () => {
+  assert.strictEqual(sanitizeForPrompt(""), "");
+});
+
+test("sanitizeForPrompt handles unicode and emoji without truncation beyond limit", () => {
+  const emoji = "🎊 Celebration event 🎊";
+  const sanitized = sanitizeForPrompt(emoji, 1000);
+  assert.ok(sanitized.length > 0);
+  assert.ok(sanitized.length <= 1000);
+});
+
+test("sanitizeForPrompt does not throw on control characters and returns a string", () => {
+  const malicious = "Event\x00Title\x01Test\x1f";
+  // sanitizeForPrompt contract: returns a string, does not throw
+  const sanitized = sanitizeForPrompt(malicious);
+  assert.strictEqual(typeof sanitized, "string");
+  // Result should be shorter or equal to the input after injection removal
+  assert.ok(sanitized.length <= malicious.length);
+});
+
+// 12. Schema boundary conditions
+test("createEventSchema rejects title shorter than 2 characters", () => {
+  assert.throws(() =>
+    createEventSchema.parse({
+      type: "wedding",
+      title: "A",
+      eventDate: "2027-06-15",
+    }),
+  );
+});
+
+test("createEventSchema accepts minimum valid title of 2 characters", () => {
+  const result = createEventSchema.parse({
+    type: "wedding",
+    title: "AB",
+    eventDate: "2027-06-15",
+  });
+  assert.strictEqual(result.title, "AB");
+});
+
+test("vendorItemSchema rejects email that is not a valid email", () => {
+  assert.throws(() =>
+    vendorItemSchema.parse({
+      name: "Vendor",
+      category: "Catering",
+      contactEmail: "not-an-email",
+    }),
+  );
+});
+
+test("vendorItemSchema accepts empty string for optional contactEmail", () => {
+  assert.doesNotThrow(() =>
+    vendorItemSchema.parse({
+      name: "Vendor",
+      category: "Catering",
+      contactEmail: "",
+    }),
+  );
 });
 
 void Promise.all(pendingTests).then(() => {

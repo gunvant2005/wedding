@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useState, useId } from "react";
 import { signUp } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { toast } from "sonner";
-import { Crown, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Crown, Eye, EyeOff, ShieldCheck, CheckCircle2 } from "lucide-react";
 
 function SignUpForm() {
   const params = useSearchParams();
@@ -24,25 +25,35 @@ function SignUpForm() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
+  const statusId = useId();
+  const pwReqId = useId();
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     e.stopPropagation();
 
     if (!name.trim()) {
-      toast.error("Please provide your name or couple title.");
+      const msg = "Please provide your name or couple title.";
+      setStatusMsg(msg);
+      toast.error(msg);
       return;
     }
     if (!email.trim()) {
-      toast.error("Please provide a valid email address.");
+      const msg = "Please provide a valid email address.";
+      setStatusMsg(msg);
+      toast.error(msg);
       return;
     }
     if (password.length < 8) {
-      toast.error("Password must be at least 8 characters for security.");
+      const msg = "Password must be at least 8 characters for security.";
+      setStatusMsg(msg);
+      toast.error(msg);
       return;
     }
 
     setLoading(true);
+    setStatusMsg("Creating your account…");
 
     try {
       const result = await signUp.email({
@@ -55,25 +66,32 @@ function SignUpForm() {
         const errMsg = result.error.message || result.error.statusText || "Could not register";
         console.warn("Sign-up notice:", result.error);
 
+        let friendlyMsg: string;
         if (
           errMsg.toLowerCase().includes("exist") ||
           errMsg.toLowerCase().includes("already in use") ||
           result.error.code === "USER_ALREADY_EXISTS"
         ) {
-          toast.error("An account with this email already exists. Please Sign In instead!");
+          friendlyMsg = "An account with this email already exists. Please Sign In instead!";
         } else if (result.error.code === "INVALID_ORIGIN" || result.error.status === 403) {
-          toast.error("Origin not allowed. Please refresh and try again.");
+          friendlyMsg = "Origin not allowed. Please refresh and try again.";
         } else {
-          toast.error(errMsg);
+          friendlyMsg = errMsg;
         }
+        setStatusMsg(friendlyMsg);
+        toast.error(friendlyMsg);
         return;
       }
 
-      toast.success("Account created. Welcome to Gatherly.");
+      const successMsg = "Account created. Welcome to Gatherly.";
+      setStatusMsg(successMsg);
+      toast.success(successMsg);
       window.location.href = next;
     } catch (error) {
       console.warn("Registration request error:", error);
-      toast.error("Unable to create your account right now. Please check your connection and try again.");
+      const errorMsg = "Unable to create your account right now. Please check your connection and try again.";
+      setStatusMsg(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -83,7 +101,25 @@ function SignUpForm() {
 
   return (
     <>
-      <form onSubmit={onSubmit} method="POST" action="#" className="mt-8 space-y-4">
+      {/* Accessible live region for screen readers */}
+      <div
+        id={statusId}
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {statusMsg}
+      </div>
+
+      <form
+        onSubmit={onSubmit}
+        method="POST"
+        action="#"
+        className="mt-8 space-y-4"
+        aria-describedby={statusId}
+        noValidate
+      >
       {/* Full Name */}
       <div className="space-y-2">
         <Label htmlFor="name" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
@@ -98,6 +134,7 @@ function SignUpForm() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={loading}
+          aria-required="true"
         />
       </div>
 
@@ -116,6 +153,7 @@ function SignUpForm() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={loading}
+          aria-required="true"
         />
       </div>
 
@@ -128,6 +166,7 @@ function SignUpForm() {
           <button
             type="button"
             aria-label={showPassword ? "Hide password" : "Show password"}
+            aria-pressed={showPassword}
             onClick={() => setShowPassword((prev) => !prev)}
             className="flex items-center gap-1 text-[11px] font-medium text-[#C5A059] hover:text-[#DFB15B] transition-colors cursor-pointer"
           >
@@ -152,7 +191,9 @@ function SignUpForm() {
             required
             autoComplete="new-password"
             minLength={8}
-            aria-describedby="password-requirements"
+            aria-describedby={pwReqId}
+            aria-required="true"
+            aria-invalid={password.length > 0 && !isPasswordValid}
             placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -162,7 +203,11 @@ function SignUpForm() {
         </div>
 
         {/* Real-time Password check helper */}
-        <div id="password-requirements" className="flex items-center gap-1.5 pt-1 text-[11px]">
+        <div id={pwReqId} className="flex items-center gap-1.5 pt-1 text-[11px]" aria-live="polite">
+          <CheckCircle2
+            className={`h-3.5 w-3.5 ${isPasswordValid ? "text-[#DFB15B]" : "text-[#3A3A45]"}`}
+            aria-hidden="true"
+          />
           <span className={isPasswordValid ? "text-[#DFB15B]" : "text-[#948B79]"}>
             {isPasswordValid ? "Password meets security requirement" : "Requires at least 8 characters"}
           </span>
@@ -170,12 +215,17 @@ function SignUpForm() {
       </div>
 
       {/* Submit button */}
-      <Button type="submit" className="w-full mt-4 h-11 text-xs tracking-widest uppercase" disabled={loading}>
-        {loading ? "Creating account..." : "Create account"}
+      <Button
+        type="submit"
+        className="w-full mt-4 h-11 text-xs tracking-widest uppercase"
+        disabled={loading}
+        aria-busy={loading}
+      >
+        {loading ? "Creating account…" : "Create account"}
       </Button>
 
       <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-[#948B79]">
-        <ShieldCheck className="h-3.5 w-3.5 text-[#C5A059]" />
+        <ShieldCheck className="h-3.5 w-3.5 text-[#C5A059]" aria-hidden="true" />
         <span>Password protected account</span>
       </div>
       </form>
@@ -198,7 +248,7 @@ export default function SignUpPage() {
       <div className="w-full max-w-md rounded-2xl border border-[rgba(197,160,89,0.3)] bg-[#121216]/90 p-8 shadow-2xl backdrop-blur-xl">
         <div className="text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#C5A059]/40 bg-[#C5A059]/10 text-[#DFB15B] shadow-[0_0_15px_rgba(197,160,89,0.2)]">
-            <Crown className="h-5 w-5" />
+            <Crown className="h-5 w-5" aria-hidden="true" />
           </div>
           <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl tracking-wider text-[#FCFBF7]">
             <Link
@@ -213,9 +263,11 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="mt-8 py-6 text-center text-xs text-[#C5A059] animate-pulse">Loading registration...</div>}>
-          <SignUpForm />
-        </Suspense>
+        <ErrorBoundary>
+          <Suspense fallback={<div className="mt-8 py-6 text-center text-xs text-[#C5A059] animate-pulse">Loading registration…</div>}>
+            <SignUpForm />
+          </Suspense>
+        </ErrorBoundary>
 
       </div>
     </div>
