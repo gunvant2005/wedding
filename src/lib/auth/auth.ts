@@ -36,6 +36,34 @@ export const auth = betterAuth({
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,
   },
+  trustedOrigins: (request) => {
+    const defaultOrigins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+      "http://10.72.76.202:3000",
+      process.env.BETTER_AUTH_URL || "",
+      process.env.NEXT_PUBLIC_APP_URL || "",
+    ].filter(Boolean);
+
+    if (!request) return defaultOrigins;
+
+    const origin = request.headers.get("origin");
+    const host = request.headers.get("host");
+    const xForwardedHost = request.headers.get("x-forwarded-host");
+    const xForwardedProto = request.headers.get("x-forwarded-proto") || "http";
+
+    const allowed = [...defaultOrigins];
+    if (origin) allowed.push(origin);
+    if (host) {
+      allowed.push(`http://${host}`);
+      allowed.push(`https://${host}`);
+    }
+    if (xForwardedHost) {
+      allowed.push(`${xForwardedProto}://${xForwardedHost}`);
+    }
+
+    return Array.from(new Set(allowed));
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;

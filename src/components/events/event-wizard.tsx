@@ -67,7 +67,7 @@ export function EventWizard() {
           ...form,
           budgetTotalCents: dollarsToCents(form.budgetDollars),
         }),
-        signal: AbortSignal.timeout(65_000),
+        signal: AbortSignal.timeout(10_000),
       });
 
       if (!res.ok) {

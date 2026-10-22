@@ -4,116 +4,98 @@ import {
   ListChecks,
   Sparkles,
   Wallet,
-  Heart,
   Crown,
-  Gem,
-  Award,
+  ChevronRight,
+  ShieldCheck,
+  Compass,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
+import { InteractiveCalculator } from "@/components/home/interactive-calculator";
+import { EventTemplates } from "@/components/home/event-templates";
+import { TimelinePreview } from "@/components/home/timeline-preview";
 
 export default function HomePage() {
   return (
     <div className="page-shell">
       <SiteHeader />
-      <main>
+      <main className="space-y-24 sm:space-y-32 pb-24">
         {/* Hero Section */}
         <section className="hero-plane relative overflow-hidden border-b border-[rgba(197,160,89,0.2)]">
-          <div className="mx-auto flex min-h-[90vh] max-w-6xl flex-col justify-center px-4 py-24 sm:px-6">
+          <div className="mx-auto flex min-h-[92vh] max-w-6xl flex-col justify-center px-4 py-20 sm:px-6">
             <div className="animate-fade-up flex items-center gap-2">
               <span className="h-px w-8 bg-[#C5A059]" />
               <span className="text-xs font-semibold tracking-[0.3em] uppercase text-[#C5A059]">
-                Haute Couture Event Planning
+                Haute Couture Event Atelier
               </span>
               <span className="h-px w-8 bg-[#C5A059]" />
             </div>
 
             <p className="animate-fade-up mt-6 font-[family-name:var(--font-display)] text-5xl font-normal tracking-tight text-[#FCFBF7] sm:text-7xl md:text-8xl">
-              Curating <span className="italic font-light text-[#DFB15B]">Timeless</span> Vows
+              Plan with <span className="italic font-light text-[#DFB15B]">clarity</span>
             </p>
 
             <h1 className="animate-fade-up-delay mt-6 max-w-2xl text-xl font-light leading-relaxed text-[#DCD4C3] sm:text-2xl">
-              The premier digital atelier for high-end weddings, bespoke anniversaries, and grand celebrations.
+              Plan weddings, celebrations, and community events in one organized workspace.
             </h1>
 
             <p className="animate-fade-up-delay-2 mt-4 max-w-xl text-sm leading-relaxed text-[#948B79]">
-              Precision budget allocation, couture timeline orchestration, elite vendor curation, and an AI planner with the etiquette and finesse of a private luxury concierge.
+              Track budgets, timeline tasks, vendors, and event details. Optional AI assistance can help draft plans and ideas when configured.
             </p>
 
+            {/* CTAs */}
             <div className="animate-fade-up-delay-2 mt-10 flex flex-wrap items-center gap-4">
               <Button asChild size="lg">
                 <Link href="/sign-up">
                   <Crown className="h-4 w-4" />
-                  Begin Bespoke Plan
+                  Start planning
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline">
-                <Link href="/sign-in">Atelier Sign In</Link>
-              </Button>
+              <a
+                href="#interactive-calculator"
+                className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-[#DFB15B] hover:text-[#FCFBF7] transition-colors px-2 py-3"
+              >
+                <span>Try the budget estimate</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+
+            {/* Quick Spec Highlights */}
+            <div className="mt-14 pt-8 border-t border-[rgba(197,160,89,0.15)] grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-[#948B79]">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-[#C5A059]" />
+                <span>Budget tracking in cents</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-[#DFB15B]" />
+                <span>Optional AI assistance</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-[#C5A059]" />
+                <span>Reorderable timeline tasks</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Compass className="h-4 w-4 text-[#DFB15B]" />
+                <span>Three event starter templates</span>
+              </div>
             </div>
 
             <div className="animate-soft-pulse pointer-events-none absolute -right-16 top-1/4 h-96 w-96 rounded-full bg-[radial-gradient(circle,rgba(212,175,55,0.15)_0%,transparent_70%)] blur-2xl" />
           </div>
         </section>
 
-        {/* Collection Showcase */}
-        <section className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
-          <div className="text-center">
-            <p className="text-xs font-semibold tracking-[0.25em] uppercase text-[#C5A059]">
-              Exquisite Gatherings
-            </p>
-            <h2 className="mt-3 font-[family-name:var(--font-display)] text-4xl text-[#FCFBF7] sm:text-5xl">
-              Crafted for Extraordinary Milestones
-            </h2>
-            <div className="gold-divider max-w-xs mx-auto">
-              <Gem className="h-4 w-4 text-[#C5A059]" />
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                icon: Heart,
-                badge: "Haute Couture",
-                title: "Luxury Weddings",
-                copy: "Multi-day celebrations, destination estates, opulent floral registries, and solemn ceremony runs.",
-              },
-              {
-                icon: Crown,
-                badge: "Grand Galas",
-                title: "Bespoke Soirées",
-                copy: "Private vineyard galas, black-tie milestone galas, fine-dining itineraries, and sommelier services.",
-              },
-              {
-                icon: Award,
-                badge: "Private Societies",
-                title: "Exclusive Gatherings",
-                copy: "Private club gatherings, charity balls, high-society banquets, and VIP concierge logistics.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="luxury-card p-8 group relative overflow-hidden"
-              >
-                <div className="flex items-center justify-between">
-                  <item.icon className="h-8 w-8 text-[#C5A059] transition-transform duration-300 group-hover:scale-110" />
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-[#948B79]">
-                    {item.badge}
-                  </span>
-                </div>
-                <h3 className="mt-6 font-[family-name:var(--font-display)] text-2xl text-[#FCFBF7] group-hover:text-[#DFB15B] transition-colors">
-                  {item.title}
-                </h3>
-                <p className="mt-3 text-sm leading-relaxed text-[#948B79]">
-                  {item.copy}
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* Example budget estimator */}
+        <section id="interactive-calculator" className="mx-auto max-w-6xl px-4 sm:px-6">
+          <InteractiveCalculator />
         </section>
 
-        {/* Pillars Section */}
-        <section className="border-y border-[rgba(197,160,89,0.2)] bg-[#0C0C0F]/90 py-24">
+        {/* Built-in event starter templates */}
+        <section className="mx-auto max-w-6xl px-4 sm:px-6">
+          <EventTemplates />
+        </section>
+
+        {/* Pillars Section: The Atelier Suite */}
+        <section className="border-y border-[rgba(197,160,89,0.2)] bg-[#0C0C0F]/90 py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
               <div>
@@ -125,7 +107,7 @@ export default function HomePage() {
                 </h2>
               </div>
               <p className="max-w-md text-sm text-[#948B79]">
-                Every detail orchestrated in single harmony — from the first floral tasting to the midnight departure.
+                Keep the details of an event together, from the first estimate to the final task.
               </p>
             </div>
 
@@ -133,26 +115,26 @@ export default function HomePage() {
               {[
                 {
                   icon: Wallet,
-                  title: "Grand Budgets",
-                  copy: "Visual allocations, payment schedules, luxury tier limits, and live spend analytics.",
+                  title: "Budget tracking",
+                  copy: "Organize planned categories and compare estimated amounts with actual costs.",
                 },
                 {
                   icon: CalendarDays,
-                  title: "Couture Timelines",
-                  copy: "Drag-and-drop chronological sequencing with custom milestone alerts and rehearsals.",
+                  title: "Planning timeline",
+                  copy: "Organize tasks by due date, set milestones, and reorder the checklist as plans change.",
                 },
                 {
                   icon: ListChecks,
-                  title: "Vendor Registry",
-                  copy: "Couture florists, Michelin-starred caterers, orchestra, and photographer contracts.",
+                  title: "Vendor tracking",
+                  copy: "Keep vendor names, contact details, notes, and booking status together.",
                 },
                 {
                   icon: Sparkles,
-                  title: "AI Concierge",
-                  copy: "Trained on high-society etiquette, seating charts, and personalized bespoke ideas.",
+                  title: "AI-assisted planning",
+                  copy: "Generate a starter plan or ask event-aware questions when an AI provider is configured. Built-in templates remain available.",
                 },
               ].map((f) => (
-                <div key={f.title} className="p-6 rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#121216]/60">
+                <div key={f.title} className="p-6 rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#121216]/60 transition-all hover:border-[#C5A059]/40 hover:-translate-y-1">
                   <div className="flex h-12 w-12 items-center justify-center rounded-lg border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#DFB15B]">
                     <f.icon className="h-6 w-6" />
                   </div>
@@ -166,14 +148,19 @@ export default function HomePage() {
           </div>
         </section>
 
+        <section className="mx-auto max-w-6xl px-4 sm:px-6">
+          <TimelinePreview />
+        </section>
+
         {/* Footer */}
-        <footer className="mx-auto max-w-6xl px-4 py-12 text-center text-xs text-[#948B79] sm:px-6">
+        <footer className="mx-auto max-w-6xl px-4 pt-12 text-center text-xs text-[#948B79] sm:px-6">
           <div className="flex items-center justify-center gap-3 mb-4">
             <span className="h-px w-12 bg-[#C5A059]/30" />
             <span className="font-[family-name:var(--font-display)] text-lg text-[#C5A059]">GATHERLY ATELIER</span>
             <span className="h-px w-12 bg-[#C5A059]/30" />
           </div>
-          <p>© 2026 Gatherly Atelier · Luxury Wedding & Celebration Planning Architecture</p>
+          <p>© 2026 Gatherly · Event planning workspace</p>
+          <p className="mt-1 text-[11px] text-[#706859]">Plan · Budget · Coordinate</p>
         </footer>
       </main>
     </div>

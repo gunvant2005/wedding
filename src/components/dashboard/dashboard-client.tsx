@@ -12,20 +12,16 @@ import {
   Layers,
   ArrowRight,
   Search,
-  CheckCircle2,
   MapPin,
   Users,
   Copy,
   LayoutGrid,
   List,
-  Flame,
   ArrowUpRight,
-  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency, daysUntil } from "@/lib/utils";
 import type { Event } from "@/db/schema";
@@ -38,42 +34,33 @@ interface DashboardClientProps {
   aiConfigured: boolean;
 }
 
-const LUXURY_PRESETS = [
+const EVENT_PRESETS = [
   {
-    title: "Lake Como Villa Reception",
+    title: "Wedding Reception",
     type: "wedding",
-    budget: 85000,
+    budget: 35000,
     guests: 120,
-    theme: "Bellagio Champagne & Ivy",
-    location: "Lake Como, Italy",
-    tag: "Italian Riviera",
+    theme: "Classic garden",
+    location: "",
+    tag: "Wedding",
   },
   {
-    title: "Monaco Casino Royale Gala",
-    type: "community",
-    budget: 150000,
-    guests: 200,
-    theme: "Black Tie Noir & Gold Foil",
-    location: "Monte Carlo, Monaco",
-    tag: "Society Gala",
-  },
-  {
-    title: "Tuscan Sunset Vineyard Vows",
-    type: "wedding",
-    budget: 48000,
-    guests: 90,
-    theme: "Rustic Olive & Terracotta Luxe",
-    location: "Val d'Orcia, Tuscany",
-    tag: "Estate Romance",
-  },
-  {
-    title: "Kyoto Royal Garden Pavilion",
+    title: "Birthday Celebration",
     type: "birthday",
-    budget: 65000,
-    guests: 80,
-    theme: "Minimalist Gold Leaf & Cedar",
-    location: "Kyoto, Japan",
-    tag: "Zen Milestone",
+    budget: 8000,
+    guests: 60,
+    theme: "Dinner and dancing",
+    location: "",
+    tag: "Birthday",
+  },
+  {
+    title: "Community Fundraiser",
+    type: "community",
+    budget: 15000,
+    guests: 180,
+    theme: "Community gathering",
+    location: "",
+    tag: "Community",
   },
 ];
 
@@ -88,8 +75,6 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // New Feature: AI Quick Vision State
-  const [customVision, setCustomVision] = useState("");
-
   // Compute nearest upcoming event
   const nearestUpcoming = useMemo(() => {
     const upcoming = events
@@ -145,7 +130,7 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
     return list;
   }, [events, searchQuery, selectedType, sortBy]);
 
-  function launchVision(preset: typeof LUXURY_PRESETS[0]) {
+  function startFromPreset(preset: (typeof EVENT_PRESETS)[number]) {
     const params = new URLSearchParams({
       title: preset.title,
       type: preset.type,
@@ -153,22 +138,6 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
       guests: String(preset.guests),
       theme: preset.theme,
       location: preset.location,
-    });
-    router.push(`/events/new?${params.toString()}`);
-  }
-
-  function launchCustomVision() {
-    if (!customVision.trim()) {
-      toast.error("Please enter your event vision first");
-      return;
-    }
-    const params = new URLSearchParams({
-      title: customVision.slice(0, 48),
-      notes: customVision,
-      type: "wedding",
-      budget: "60000",
-      guests: "120",
-      theme: "Bespoke Haute Elegance",
     });
     router.push(`/events/new?${params.toString()}`);
   }
@@ -182,8 +151,8 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
       `🏛️ GATHERLY EXECUTIVE EVENT PORTFOLIO`,
       `Client / Host: ${userName}`,
       `Total Orchestrated Budget: ${formatCurrency(totalBudget)}`,
-      `Total Spent / Committed: ${formatCurrency(totalSpent)}`,
-      `Total Guest Count: ${totalGuests.toLocaleString()}`,
+      `Actual Spend Recorded: ${formatCurrency(totalSpent)}`,
+      `Total Guest Count: ${totalGuests.toLocaleString("en-US")}`,
       `Events Count: ${events.length}`,
       ``,
       ...events.map(
@@ -215,7 +184,7 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
                 Atelier Workspace
               </span>
               <span className="text-xs text-[#9E9685]">
-                {format(new Date(), "EEEE, MMMM d, yyyy")}
+                Your events and planning details
               </span>
             </div>
 
@@ -224,7 +193,7 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
             </h1>
 
             <p className="max-w-2xl text-sm sm:text-base text-[#D6D0C2] leading-relaxed">
-              Your bespoke event portfolio is synchronized. Monitor budgets, review timeline milestones, and consult the AI copilot for immediate orchestration.
+              Review your event details, budgets, timelines, vendors, and planning tools.
             </p>
           </div>
 
@@ -242,7 +211,7 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
             <Button asChild size="default" className="cursor-pointer shadow-[0_0_24px_rgba(212,175,55,0.3)]">
               <Link href="/events/new">
                 <Sparkles className="h-4 w-4" />
-                Orchestrate New Event
+                Create event
               </Link>
             </Button>
           </div>
@@ -259,7 +228,7 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
               {formatCurrency(totalBudget)}
             </p>
             <div className="mt-2 flex items-center justify-between text-[11px] text-[#A89F8E]">
-              <span>Spent: {formatCurrency(totalSpent)}</span>
+              <span>Actual spend: {formatCurrency(totalSpent)}</span>
               <span className="text-[#DFB15B]">
                 {totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0}%
               </span>
@@ -268,37 +237,39 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
 
           <div className="rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#141419]/80 p-4 backdrop-blur-md transition-all hover:border-[#C5A059]/40">
             <div className="flex items-center justify-between text-xs text-[#9E9685]">
-              <span className="uppercase tracking-widest text-[10px]">Curated Events</span>
+              <span className="uppercase tracking-widest text-[10px]">Events</span>
               <Layers className="h-4 w-4 text-[#DFB15B]" />
             </div>
             <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight text-[#FAF8F5]">
               {events.length}
             </p>
             <p className="mt-2 text-[11px] text-[#A89F8E]">
-              {events.filter((e) => e.type === "wedding").length} Weddings · {events.filter((e) => e.type === "community").length} Galas
+              {events.filter((e) => e.type === "wedding").length} weddings ·{" "}
+              {events.filter((e) => e.type === "birthday").length} birthdays ·{" "}
+              {events.filter((e) => e.type === "community").length} community events
             </p>
           </div>
 
           <div className="rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#141419]/80 p-4 backdrop-blur-md transition-all hover:border-[#C5A059]/40">
             <div className="flex items-center justify-between text-xs text-[#9E9685]">
-              <span className="uppercase tracking-widest text-[10px]">Expected Guests</span>
+              <span className="uppercase tracking-widest text-[10px]">Guests</span>
               <Users className="h-4 w-4 text-[#DFB15B]" />
             </div>
             <p className="mt-2 text-xl sm:text-2xl font-bold tracking-tight text-[#FAF8F5]">
-              {totalGuests.toLocaleString()}
+              {totalGuests.toLocaleString("en-US")}
             </p>
-            <p className="mt-2 text-[11px] text-[#A89F8E]">Across all active affairs</p>
+            <p className="mt-2 text-[11px] text-[#A89F8E]">Across this portfolio</p>
           </div>
 
           <div className="rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#141419]/80 p-4 backdrop-blur-md transition-all hover:border-[#C5A059]/40">
             <div className="flex items-center justify-between text-xs text-[#9E9685]">
-              <span className="uppercase tracking-widest text-[10px]">AI Copilot Engine</span>
+              <span className="uppercase tracking-widest text-[10px]">AI planning</span>
               <Sparkles className="h-4 w-4 text-[#DFB15B]" />
             </div>
             <div className="mt-2 flex items-center gap-2">
               <span className={`h-2 w-2 rounded-full ${aiConfigured ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : "bg-amber-400"}`} />
               <p className="text-xl sm:text-2xl font-bold tracking-tight text-[#FAF8F5]">
-                {aiConfigured ? "Active" : "Unavailable"}
+                {aiConfigured ? "Configured" : "Templates"}
               </p>
             </div>
             <p className="mt-2 text-[11px] text-[#A89F8E]">
@@ -306,114 +277,35 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
             </p>
           </div>
         </div>
-
-        {/* Portfolio Detailing & Intelligence Drawer */}
-        <div className="relative z-10 mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3 border-t border-[rgba(197,160,89,0.12)] pt-5">
-          <div className="flex items-center gap-3 rounded-lg bg-[#0C0C10]/60 px-3.5 py-2.5 border border-[rgba(197,160,89,0.1)]">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#DFB15B]/10 text-[#DFB15B] text-xs">
-              <TrendingUp className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#9E9685]">Average Per Guest</p>
-              <p className="text-xs font-semibold text-[#FAF8F5]">
-                {totalGuests > 0 ? formatCurrency(Math.round(totalBudget / totalGuests)) : "$0"} / patron
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-lg bg-[#0C0C10]/60 px-3.5 py-2.5 border border-[rgba(197,160,89,0.1)]">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#DFB15B]/10 text-[#DFB15B] text-xs">
-              <Flame className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#9E9685]">Reserve Liquidity</p>
-              <p className="text-xs font-semibold text-[#E8C87E]">
-                {formatCurrency(Math.max(0, totalBudget - totalSpent))} Unallocated
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 rounded-lg bg-[#0C0C10]/60 px-3.5 py-2.5 border border-[rgba(197,160,89,0.1)]">
-            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#DFB15B]/10 text-[#DFB15B] text-xs">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-wider text-[#9E9685]">Planning Velocity</p>
-              <p className="text-xs font-semibold text-emerald-400">
-                100% Architecture Integrity
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* FEATURE A: Spotlight Upcoming Event with Live Animated Countdown */}
+      {/* Upcoming event countdown */}
       {nearestUpcoming && <CountdownSpotlight event={nearestUpcoming} />}
 
-      {/* FEATURE B: Bespoke AI Vision Studio & Preset Vault */}
+      {/* Event starter presets */}
       <div className="rounded-3xl border border-[rgba(197,160,89,0.25)] bg-[#111116]/90 p-6 sm:p-8 backdrop-blur-xl">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-[#DFB15B]" />
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#C5A059]">
-                AI Vision Studio
-              </p>
-            </div>
-            <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl sm:text-3xl text-[#FAF8F5]">
-              Instant Event Vision & Presets
-            </h2>
-            <p className="mt-1 text-xs sm:text-sm text-[#9E9685]">
-              Choose a signature high-society template or describe your customized affair to jumpstart the AI orchestrator.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Badge className="border-[#C5A059]/40 bg-[#C5A059]/10 text-[#E8C87E]">
-              1-Click Orchestration
-            </Badge>
-          </div>
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-[#DFB15B]" />
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[#C5A059]">
+            Event presets
+          </p>
         </div>
+        <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl sm:text-3xl text-[#FAF8F5]">
+          Start with an example
+        </h2>
+        <p className="mt-1 text-xs sm:text-sm text-[#9E9685]">
+          These examples prefill editable details; set your own location, date, and budget before saving.
+        </p>
 
-        {/* Custom Prompt Bar */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9E9685]" />
-            <Input
-              aria-label="Describe your event vision"
-              value={customVision}
-              onChange={(e) => setCustomVision(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && launchCustomVision()}
-              placeholder="e.g. Candlelit Venetian palace celebration for 140 guests with chamber orchestra & champagne tower..."
-              className="pl-10 h-11 border-[rgba(197,160,89,0.25)] bg-[#0A0A0D] text-[#FAF8F5] placeholder:text-[#6C6558] focus-visible:border-[#DFB15B]"
-            />
-          </div>
-          <Button
-            onClick={launchCustomVision}
-            size="default"
-            className="h-11 px-6 whitespace-nowrap cursor-pointer shadow-[0_0_15px_rgba(197,160,89,0.2)]"
-          >
-            <Sparkles className="h-4 w-4" />
-            Orchestrate Vision
-          </Button>
-        </div>
-
-        {/* Signature Presets Carousel */}
+        {/* Example presets */}
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {LUXURY_PRESETS.map((preset) => (
-            <div
+          {EVENT_PRESETS.map((preset) => (
+            <button
               key={preset.title}
-              role="button"
-              tabIndex={0}
-              aria-label={`Orchestrate ${preset.title} preset`}
-              onClick={() => launchVision(preset)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  launchVision(preset);
-                }
-              }}
-              className="group cursor-pointer rounded-2xl border border-[rgba(197,160,89,0.2)] bg-[#15151B]/70 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-[#DFB15B]/60 hover:bg-[#1A1A22] hover:shadow-[0_8px_25px_rgba(197,160,89,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFB15B]"
+              type="button"
+              aria-label={`Use ${preset.title} as a starting point`}
+              onClick={() => startFromPreset(preset)}
+              className="group cursor-pointer rounded-2xl border border-[rgba(197,160,89,0.2)] bg-[#15151B]/70 p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:border-[#DFB15B]/60 hover:bg-[#1A1A22] hover:shadow-[0_8px_25px_rgba(197,160,89,0.15)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#DFB15B]"
             >
               <div className="flex items-start justify-between">
                 <span className="rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 px-2.5 py-0.5 text-[9px] font-semibold tracking-wider text-[#DFB15B] uppercase">
@@ -428,14 +320,14 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
 
               <p className="mt-1 text-xs text-[#9E9685] flex items-center gap-1">
                 <MapPin className="h-3 w-3 text-[#C5A059]" />
-                {preset.location}
+                {preset.location || "Location to be selected"}
               </p>
 
               <div className="mt-4 flex items-center justify-between border-t border-[rgba(197,160,89,0.1)] pt-3 text-xs text-[#D6D0C2]">
-                <span>{formatCurrency(preset.budget * 100)}</span>
+                <span>Example: {formatCurrency(preset.budget * 100)}</span>
                 <span>{preset.guests} Guests</span>
               </div>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -446,10 +338,10 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <h2 className="font-[family-name:var(--font-display)] text-2xl sm:text-3xl text-[#FAF8F5]">
-              Curated Event Portfolio
+              Your events
             </h2>
             <p className="text-xs text-[#9E9685]">
-              Showing {filteredEvents.length} of {events.length} planned affairs
+              Showing {filteredEvents.length} of {events.length} events
             </p>
           </div>
 
@@ -516,10 +408,10 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
         {/* Type Filter Pills */}
         <div className="flex flex-wrap items-center gap-2">
           {[
-            { id: "all", label: "All Affairs" },
-            { id: "wedding", label: "Luxury Weddings" },
-            { id: "community", label: "Society Galas" },
-            { id: "birthday", label: "Milestones" },
+            { id: "all", label: "All events" },
+            { id: "wedding", label: "Weddings" },
+            { id: "birthday", label: "Birthdays" },
+            { id: "community", label: "Community events" },
           ].map((pill) => (
             <button
               key={pill.id}
@@ -543,17 +435,17 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border border-[#C5A059]/40 bg-[#C5A059]/10 text-[#DFB15B] shadow-[0_0_20px_rgba(197,160,89,0.25)]">
               <Crown className="h-6 w-6" />
             </div>
-            <h3 className="mt-6 font-[family-name:var(--font-display)] text-2xl text-[#FAF8F5]">
-              {events.length === 0 ? "No Curated Events In Portfolio" : "No Matching Affairs Found"}
+            <h3 className="mt-4 font-[family-name:var(--font-display)] text-xl text-[#FAF8F5]">
+              {events.length === 0 ? "No events yet" : "No matching events"}
             </h3>
             <p className="mx-auto mt-2 max-w-md text-sm text-[#9E9685]">
               {events.length === 0
-                ? "Begin orchestrating your bespoke luxury wedding, gala, or milestone celebration with our automated AI engine."
+                ? "Create an event to start organizing its budget, timeline, and vendors."
                 : "Try adjusting your search criteria or filter tags."}
             </p>
             {events.length === 0 && (
               <Button asChild className="mt-8">
-                <Link href="/events/new">Orchestrate Your First Event</Link>
+                <Link href="/events/new">Create your first event</Link>
               </Button>
             )}
           </div>
@@ -673,9 +565,9 @@ export function DashboardClient({ events, spentMap, userName, aiConfigured }: Da
                       </p>
                     </div>
 
-                    <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-                      Manage <ArrowRight className="h-3 w-3" />
-                    </Button>
+                    <span className="hidden items-center gap-1 text-xs text-[#DFB15B] sm:inline-flex">
+                      View event <ArrowRight className="h-3 w-3" />
+                    </span>
                   </div>
                 </Link>
               );

@@ -5,28 +5,30 @@ const protectedPrefixes = ["/dashboard", "/events"];
 
 export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
-  const isDevelopment = process.env.NODE_ENV === "development";
-  const csp = [
-    "default-src 'self'",
-    // Next.js currently emits inline bootstrap scripts and same-origin chunks.
-    // Keep same-origin restrictions and permit the inline bootstrap required
-    // for client hydration; strict-dynamic without matching script nonces
-    // blocks the app's own chunks in browsers.
-    `script-src 'self' 'unsafe-inline'${isDevelopment ? " 'unsafe-eval'" : ""}`,
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
-    "font-src 'self'",
-    `connect-src 'self'${isDevelopment ? " ws: wss:" : ""}`,
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    ...(isDevelopment ? [] : ["upgrade-insecure-requests"]),
-  ].join("; ");
+  const isDevelopment = process.env.NODE_ENV !== "production";
+  const isHttps = request.nextUrl.protocol === "https:";
+
+  const csp = isDevelopment
+    ? "" // In development, allow Next.js Turbopack dev tools, HMR websockets, and fast-refresh
+    : [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob: https:",
+        "font-src 'self' data:",
+        "connect-src 'self' https:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        ...(isHttps ? ["upgrade-insecure-requests"] : []),
+      ].join("; ");
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
-  requestHeaders.set("Content-Security-Policy", csp);
+  if (csp) {
+    requestHeaders.set("Content-Security-Policy", csp);
+  }
 
   const { pathname } = request.nextUrl;
   const isProtected = protectedPrefixes.some(
@@ -45,7 +47,9 @@ export function proxy(request: NextRequest) {
     });
   }
 
-  response.headers.set("Content-Security-Policy", csp);
+  if (csp) {
+    response.headers.set("Content-Security-Policy", csp);
+  }
   return response;
 }
 

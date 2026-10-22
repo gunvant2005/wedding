@@ -1,4 +1,4 @@
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { z } from "zod";
 import { getSession } from "@/lib/auth/session";
 import { getAiModel, isAiConfigured } from "@/lib/ai/client";
@@ -47,43 +47,63 @@ export async function POST(req: Request) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }
 
+  const fallbackIdeas = [
+    {
+      title: "Signature Welcome Repertoire",
+      description: `Incorporate a signature moment celebrating your ${event.theme || event.type} theme as guests arrive.`,
+      categoryTag: "Theme",
+    },
+    {
+      title: "Atmospheric Visual Vignette",
+      description: "Create an intentional focal backdrop or lounge area for memorable guest photography.",
+      categoryTag: "Decor",
+    },
+    {
+      title: "Curated Hospitality Touch",
+      description: `Introduce a personalized sensory detail inspired by ${event.location || "your venue"}.`,
+      categoryTag: "Hospitality",
+    },
+  ];
+
   if (!isAiConfigured()) {
-    const ideas = [
-      {
-        title: "Signature detail",
-        description: `Add one memorable detail tied to your ${event.theme || event.type} theme.`,
-        categoryTag: "Theme",
-      },
-      {
-        title: "Guest connection",
-        description:
-          "Include a short activity that helps guests mingle in the first 30 minutes.",
-        categoryTag: "Experience",
-      },
-      {
-        title: "Budget-smart upgrade",
-        description:
-          "Reallocate a small percent of misc budget toward one high-impact visual moment.",
-        categoryTag: "Budget",
-      },
-    ];
-    await saveIdeasAction(eventId, ideas);
-    return Response.json({ ideas, source: "template" });
+    await saveIdeasAction(eventId, fallbackIdeas);
+    return Response.json({ ideas: fallbackIdeas, source: "template" });
   }
 
   try {
-    const { object } = await generateObject({
+    const { text } = await generateText({
       model: getAiModel(),
-      schema: eventIdeasSchema.transform((ideas) => ({ ideas })),
-      prompt: buildIdeasPrompt(event),
+      system: "You are an expert luxury event concept curator. Return ONLY a raw JSON array of 3 to 6 ideas without markdown blocks.",
+      prompt: `${buildIdeasPrompt(event)}
+Format:
+[
+  { "title": "...", "description": "...", "categoryTag": "..." }
+]`,
     });
-    await saveIdeasAction(eventId, object.ideas);
-    return Response.json({ ideas: object.ideas, source: "ai" });
+
+    let rawJson = text.trim();
+    if (rawJson.startsWith("```")) {
+      rawJson = rawJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    }
+    const jsonStart = rawJson.indexOf("[");
+    const jsonEnd = rawJson.lastIndexOf("]");
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      rawJson = rawJson.slice(jsonStart, jsonEnd + 1);
+    }
+
+    const candidate = JSON.parse(rawJson);
+    const validated = eventIdeasSchema.safeParse(candidate);
+
+    if (validated.success && validated.data.length >= 3) {
+      await saveIdeasAction(eventId, validated.data);
+      return Response.json({ ideas: validated.data, source: "ai" });
+    }
+
+    await saveIdeasAction(eventId, fallbackIdeas);
+    return Response.json({ ideas: fallbackIdeas, source: "template-fallback" });
   } catch (error) {
-    console.error("ideas failed", error);
-    return Response.json(
-      { error: "Failed to generate ideas" },
-      { status: 500 },
-    );
+    console.warn("ideas generation note, using fallback:", error);
+    await saveIdeasAction(eventId, fallbackIdeas);
+    return Response.json({ ideas: fallbackIdeas, source: "template-fallback" });
   }
 }

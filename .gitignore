@@ -51,4 +51,10 @@ scripts/test-report-results.json
 *.tsbuildinfo
 next-env.d.ts
 
+# python / venv
+.venv/
+venv/
+__pycache__/
+
 .vercel
+

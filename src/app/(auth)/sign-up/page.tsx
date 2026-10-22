@@ -1,38 +1,196 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useState } from "react";
 import { signUp } from "@/lib/auth/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Crown } from "lucide-react";
+import { Crown, Eye, EyeOff, ShieldCheck } from "lucide-react";
 
-export default function SignUpPage() {
-  const router = useRouter();
+function SignUpForm() {
+  const params = useSearchParams();
+  const requestedNext = params.get("next") || "/dashboard";
+  const next =
+    requestedNext.startsWith("/") &&
+    !requestedNext.startsWith("//") &&
+    !requestedNext.includes("\\")
+      ? requestedNext
+      : "/dashboard";
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setLoading(true);
-    const form = new FormData(e.currentTarget);
-    const name = String(form.get("name") || "");
-    const email = String(form.get("email") || "");
-    const password = String(form.get("password") || "");
+    e.stopPropagation();
 
-    const { error } = await signUp.email({ name, email, password });
-    setLoading(false);
-    if (error) {
-      toast.error(error.message || "Could not register");
+    if (!name.trim()) {
+      toast.error("Please provide your name or couple title.");
       return;
     }
-    toast.success("Account created successfully");
-    router.push("/dashboard");
-    router.refresh();
+    if (!email.trim()) {
+      toast.error("Please provide a valid email address.");
+      return;
+    }
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters for security.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const result = await signUp.email({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+      });
+
+      if (result.error) {
+        const errMsg = result.error.message || result.error.statusText || "Could not register";
+        console.warn("Sign-up notice:", result.error);
+
+        if (
+          errMsg.toLowerCase().includes("exist") ||
+          errMsg.toLowerCase().includes("already in use") ||
+          result.error.code === "USER_ALREADY_EXISTS"
+        ) {
+          toast.error("An account with this email already exists. Please Sign In instead!");
+        } else if (result.error.code === "INVALID_ORIGIN" || result.error.status === 403) {
+          toast.error("Origin not allowed. Please refresh and try again.");
+        } else {
+          toast.error(errMsg);
+        }
+        return;
+      }
+
+      toast.success("Account created. Welcome to Gatherly.");
+      window.location.href = next;
+    } catch (error) {
+      console.warn("Registration request error:", error);
+      toast.error("Unable to create your account right now. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
+  const isPasswordValid = password.length >= 8;
+
+  return (
+    <>
+      <form onSubmit={onSubmit} method="POST" action="#" className="mt-8 space-y-4">
+      {/* Full Name */}
+      <div className="space-y-2">
+        <Label htmlFor="name" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+          Full Name / Couple Name
+        </Label>
+        <Input
+          id="name"
+          name="name"
+          required
+          autoComplete="name"
+          placeholder="e.g. Eleanor & Julian"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={loading}
+        />
+      </div>
+
+      {/* Email */}
+      <div className="space-y-2">
+        <Label htmlFor="email" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+          Email Address
+        </Label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          required
+          autoComplete="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
+        />
+      </div>
+
+      {/* Password with Show/Hide toggle */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password" className="text-xs uppercase tracking-wider text-[#DCD4C3]">
+            Password
+          </Label>
+          <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="flex items-center gap-1 text-[11px] font-medium text-[#C5A059] hover:text-[#DFB15B] transition-colors cursor-pointer"
+          >
+            {showPassword ? (
+              <>
+                <EyeOff className="h-3.5 w-3.5" />
+                <span>Hide</span>
+              </>
+            ) : (
+              <>
+                <Eye className="h-3.5 w-3.5" />
+                <span>Show Password</span>
+              </>
+            )}
+          </button>
+        </div>
+        <div className="relative">
+          <Input
+            id="password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            required
+            autoComplete="new-password"
+            minLength={8}
+            placeholder="At least 8 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            className="pr-10"
+          />
+        </div>
+
+        {/* Real-time Password check helper */}
+        <div className="flex items-center gap-1.5 pt-1 text-[11px]">
+          <span className={isPasswordValid ? "text-[#DFB15B]" : "text-[#948B79]"}>
+            {isPasswordValid ? "Password meets security requirement" : "Requires at least 8 characters"}
+          </span>
+        </div>
+      </div>
+
+      {/* Submit button */}
+      <Button type="submit" className="w-full mt-4 h-11 text-xs tracking-widest uppercase" disabled={loading}>
+        {loading ? "Creating account..." : "Create account"}
+      </Button>
+
+      <div className="pt-2 flex items-center justify-center gap-2 text-[11px] text-[#948B79]">
+        <ShieldCheck className="h-3.5 w-3.5 text-[#C5A059]" />
+        <span>Password protected account</span>
+      </div>
+      </form>
+      <p className="mt-6 text-center text-xs text-[#B8B09F]">
+        Already have an account?{" "}
+        <Link
+          href={`/sign-in?next=${encodeURIComponent(next)}`}
+          className="font-semibold text-[#DFB15B] hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
+    </>
+  );
+}
+
+export default function SignUpPage() {
   return (
     <div className="page-shell flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-[rgba(197,160,89,0.3)] bg-[#121216]/90 p-8 shadow-2xl backdrop-blur-xl">
@@ -51,37 +209,10 @@ export default function SignUpPage() {
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="mt-8 space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Full Name / Couple Name</Label>
-            <Input id="name" name="name" required placeholder="e.g. Burkay & Eleonora" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Email Address</Label>
-            <Input id="email" name="email" type="email" required autoComplete="email" placeholder="you@example.com" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs uppercase tracking-wider text-[#DCD4C3]">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-              minLength={8}
-              placeholder="At least 8 characters"
-            />
-          </div>
-          <Button type="submit" className="w-full mt-2" disabled={loading}>
-            {loading ? "Creating Atelier Account..." : "Create Account"}
-          </Button>
-        </form>
+        <Suspense fallback={<div className="mt-8 py-6 text-center text-xs text-[#C5A059] animate-pulse">Loading registration...</div>}>
+          <SignUpForm />
+        </Suspense>
 
-        <p className="mt-6 text-center text-xs text-[#B8B09F]">
-          Already have an account?{" "}
-          <Link href="/sign-in" className="font-semibold text-[#DFB15B] hover:underline">
-            Sign In
-          </Link>
-        </p>
       </div>
     </div>
   );

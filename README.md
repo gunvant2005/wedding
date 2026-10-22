@@ -84,12 +84,12 @@
       </ul>
     </td>
     <td width="50%" valign="top">
-      <h3>✨ 1-Click High-Society Presets</h3>
+      <h3>✨ Event Starter Presets</h3>
       <ul>
-        <li><strong>Lake Como Villa</strong>: Champagne & Ivy Bellagio reception.</li>
-        <li><strong>Monaco Casino Royale</strong>: Black Tie Noir & Gold Foil gala.</li>
-        <li><strong>Tuscan Sunset Vineyard</strong>: Rustic Olive & Terracotta Luxe vows.</li>
-        <li><strong>Kyoto Royal Garden</strong>: Minimalist Gold Leaf & Cedar milestone.</li>
+        <li><strong>Wedding reception</strong>: Editable starter details for a wedding event.</li>
+        <li><strong>Birthday celebration</strong>: A starter plan for a birthday event.</li>
+        <li><strong>Community fundraiser</strong>: A starter plan for a community event.</li>
+        <li>Sample budgets and guest counts are editable starting points, not quotes.</li>
       </ul>
     </td>
   </tr>
