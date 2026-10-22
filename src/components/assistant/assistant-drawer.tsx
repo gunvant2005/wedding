@@ -32,6 +32,9 @@ export function AssistantDrawer({
             <Dialog.Title className="font-semibold text-[#FCFBF7]">
               AI planner
             </Dialog.Title>
+            <Dialog.Description className="sr-only">
+              Interactive AI event concierge to help coordinate wedding timeline, budget, and vendors.
+            </Dialog.Description>
             <Dialog.Close asChild>
               <Button variant="ghost" size="icon" aria-label="Close AI Planner dialog">
                 <X className="h-5 w-5" />

@@ -123,17 +123,18 @@ function SignInForm() {
           </Label>
           <button
             type="button"
+            aria-label={showPassword ? "Hide password" : "Show password"}
             onClick={() => setShowPassword((prev) => !prev)}
             className="flex items-center gap-1 text-[11px] font-medium text-[#C5A059] hover:text-[#DFB15B] transition-colors cursor-pointer"
           >
             {showPassword ? (
               <>
-                <EyeOff className="h-3.5 w-3.5" />
+                <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Hide</span>
               </>
             ) : (
               <>
-                <Eye className="h-3.5 w-3.5" />
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Show Password</span>
               </>
             )}
@@ -187,12 +188,14 @@ export default function SignInPage() {
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-[#C5A059]/40 bg-[#C5A059]/10 text-[#DFB15B] shadow-[0_0_15px_rgba(197,160,89,0.2)]">
             <Crown className="h-5 w-5" />
           </div>
-          <Link
-            href="/"
-            className="mt-4 inline-block font-[family-name:var(--font-display)] text-3xl tracking-wider text-[#FCFBF7]"
-          >
-            GATHERLY
-          </Link>
+          <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl tracking-wider text-[#FCFBF7]">
+            <Link
+              href="/"
+              className="inline-block hover:text-[#DFB15B] transition-colors"
+            >
+              GATHERLY
+            </Link>
+          </h1>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-[#C5A059]">
             Client Atelier Access
           </p>

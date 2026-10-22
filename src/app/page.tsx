@@ -31,13 +31,13 @@ export default function HomePage() {
               <span className="h-px w-8 bg-[#C5A059]" />
             </div>
 
-            <p className="animate-fade-up mt-6 font-[family-name:var(--font-display)] text-5xl font-normal tracking-tight text-[#FCFBF7] sm:text-7xl md:text-8xl">
+            <h1 className="animate-fade-up mt-6 font-[family-name:var(--font-display)] text-5xl font-normal tracking-tight text-[#FCFBF7] sm:text-7xl md:text-8xl">
               Plan with <span className="italic font-light text-[#DFB15B]">clarity</span>
-            </p>
-
-            <h1 className="animate-fade-up-delay mt-6 max-w-2xl text-xl font-light leading-relaxed text-[#DCD4C3] sm:text-2xl">
-              Plan weddings, celebrations, and community events in one organized workspace.
             </h1>
+
+            <p className="animate-fade-up-delay mt-6 max-w-2xl text-xl font-light leading-relaxed text-[#DCD4C3] sm:text-2xl">
+              Plan weddings, celebrations, and community events in one organized workspace.
+            </p>
 
             <p className="animate-fade-up-delay-2 mt-4 max-w-xl text-sm leading-relaxed text-[#948B79]">
               Track budgets, timeline tasks, vendors, and event details. Optional AI assistance can help draft plans and ideas when configured.

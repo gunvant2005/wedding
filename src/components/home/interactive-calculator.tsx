@@ -40,9 +40,9 @@ export function InteractiveCalculator() {
               Example budget estimate
             </span>
           </div>
-          <h3 className="mt-1 font-[family-name:var(--font-display)] text-2xl sm:text-3xl text-[#FCFBF7]">
+          <h2 className="mt-1 font-[family-name:var(--font-display)] text-2xl sm:text-3xl text-[#FCFBF7]">
             Estimate a starting budget
-          </h3>
+          </h2>
           <p className="mt-1 text-xs text-[#948B79]">
             Enter your own budget and guest count. The category amounts are an illustrative split, not vendor quotes.
           </p>

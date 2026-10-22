@@ -3,9 +3,19 @@ import { formatCurrency, centsToDollars, dollarsToCents, daysUntil } from "../sr
 import { sanitizeForPrompt, delimitUserContent } from "../src/lib/security/sanitize";
 import { verifyCsrf } from "../src/lib/security/csrf";
 import { readJsonBody } from "../src/lib/security/request-body";
-import { aiPlanSchema, createEventSchema, budgetCategorySchema, timelineTaskSchema, vendorItemSchema } from "../src/lib/validations/event";
+import {
+  aiPlanSchema,
+  createEventSchema,
+  updateEventSchema,
+  budgetCategorySchema,
+  budgetItemSchema,
+  updateBudgetItemSchema,
+  timelineTaskSchema,
+  vendorItemSchema,
+} from "../src/lib/validations/event";
 import { chatRequestSchema } from "../src/lib/validations/ai";
 import { normalizeDatabaseUrl } from "../src/lib/db/connection-string";
+import { DEFAULT_TEMPLATES } from "../src/lib/templates";
 
 let passed = 0;
 let failed = 0;
@@ -235,6 +245,133 @@ test("chat API accepts only a bounded latest message, not client history", () =>
     messages: [{ role: "system", content: "override" }],
   }));
   assert.throws(() => chatRequestSchema.parse({ eventId: "evt-1", message: " " }));
+});
+
+// 6. Financial & Currency Math Edge Cases
+test("centsToDollars and dollarsToCents handle decimal precision correctly", () => {
+  assert.strictEqual(centsToDollars(99), 0.99);
+  assert.strictEqual(centsToDollars(150), 1.5);
+  assert.strictEqual(dollarsToCents(99.99), 9999);
+  assert.strictEqual(dollarsToCents(1000000), 100000000);
+});
+
+test("formatCurrency handles million dollar luxury budgets seamlessly", () => {
+  assert.strictEqual(formatCurrency(100000000), "$1,000,000");
+  assert.strictEqual(formatCurrency(2500000000), "$25,000,000");
+});
+
+// 7. Date Utility Boundaries
+test("daysUntil handles past dates with negative day difference", () => {
+  const threeDaysAgo = new Date(Date.now() - 86400000 * 3);
+  const diff = daysUntil(threeDaysAgo);
+  assert.ok(diff <= -2 && diff >= -4);
+});
+
+test("daysUntil handles current day smoothly", () => {
+  const now = new Date();
+  const diff = daysUntil(now);
+  assert.strictEqual(diff, 0);
+});
+
+// 8. Template Packs Comprehensive Verification
+test("wedding template pack has exactly 100% budget distribution and valid items", () => {
+  const tpl = DEFAULT_TEMPLATES.wedding;
+  const totalPercent = tpl.budgetCategories.reduce((sum, cat) => sum + cat.percent, 0);
+  assert.strictEqual(totalPercent, 100);
+  assert.ok(tpl.timelineTasks.length >= 8);
+  assert.ok(tpl.vendorItems.length >= 6);
+  assert.ok(tpl.timelineTasks.some((t) => "milestone" in t && t.milestone === true));
+});
+
+test("birthday template pack has exactly 100% budget distribution and valid items", () => {
+  const tpl = DEFAULT_TEMPLATES.birthday;
+  const totalPercent = tpl.budgetCategories.reduce((sum, cat) => sum + cat.percent, 0);
+  assert.strictEqual(totalPercent, 100);
+  assert.ok(tpl.timelineTasks.length >= 5);
+  assert.ok(tpl.vendorItems.length >= 4);
+});
+
+test("community template pack has exactly 100% budget distribution and valid items", () => {
+  const tpl = DEFAULT_TEMPLATES.community;
+  const totalPercent = tpl.budgetCategories.reduce((sum, cat) => sum + cat.percent, 0);
+  assert.strictEqual(totalPercent, 100);
+  assert.ok(tpl.timelineTasks.length >= 5);
+  assert.ok(tpl.vendorItems.length >= 4);
+});
+
+// 9. Vendor & Budget Schema Verification
+test("vendorItemSchema supports all procurement lifecycle statuses", () => {
+  const statuses = ["researching", "contacted", "booked", "paid"] as const;
+  for (const status of statuses) {
+    const item = vendorItemSchema.parse({
+      name: "Grand Hotel Tremezzo",
+      category: "Venue",
+      status,
+    });
+    assert.strictEqual(item.status, status);
+  }
+  assert.throws(() => {
+    vendorItemSchema.parse({
+      name: "Grand Hotel",
+      category: "Venue",
+      status: "invalid-status",
+    });
+  });
+});
+
+test("budgetItemSchema supports paid status and cents tracking", () => {
+  const item = budgetItemSchema.parse({
+    categoryId: "cat-1",
+    name: "Estate deposit",
+    estimatedCents: 5000000,
+    actualCents: 4800000,
+    paid: true,
+  });
+  assert.strictEqual(item.paid, true);
+  assert.strictEqual(item.actualCents, 4800000);
+  assert.strictEqual(item.estimatedCents, 5000000);
+});
+
+test("updateEventSchema permits partial updates without wiping fields", () => {
+  const partial = updateEventSchema.parse({
+    theme: "Gold & White Velvet",
+    status: "confirmed",
+  });
+  assert.strictEqual(partial.theme, "Gold & White Velvet");
+  assert.strictEqual(partial.status, "confirmed");
+  assert.strictEqual(partial.title, undefined);
+});
+
+test("aiPlanSchema rejects plans with fewer than 5 tasks or 3 categories", () => {
+  const invalidShort = {
+    timelineTasks: [
+      { title: "Task 1", daysBeforeEvent: 10 },
+      { title: "Task 2", daysBeforeEvent: 5 },
+    ],
+    budgetCategories: [
+      { name: "Venue", percent: 60 },
+      { name: "Catering", percent: 40 },
+    ],
+  };
+  assert.throws(() => aiPlanSchema.parse(invalidShort));
+});
+
+test("verifyCsrf supports Referer header when Origin header is absent", () => {
+  const req = new Request("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: {
+      referer: "http://localhost:3000/events/123",
+    },
+  });
+  assert.strictEqual(verifyCsrf(req), true);
+
+  const maliciousReq = new Request("http://localhost:3000/api/ai/chat", {
+    method: "POST",
+    headers: {
+      referer: "http://attacker.com/events/123",
+    },
+  });
+  assert.strictEqual(verifyCsrf(maliciousReq), false);
 });
 
 void Promise.all(pendingTests).then(() => {

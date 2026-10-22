@@ -77,7 +77,7 @@ export function TimelinePreview() {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2" aria-label="Timeline stages">
+        <div role="group" className="flex flex-wrap gap-2" aria-label="Timeline stages">
           {stages.map((item, index) => (
             <button
               key={item.label}

@@ -31,7 +31,7 @@ export async function SiteHeader({
         </Link>
 
         {!session?.user && (
-          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-[#B6AD9C]">
+          <nav aria-label="Main navigation" className="hidden md:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-[#B6AD9C]">
             <Link href="/#interactive-calculator" className="hover:text-[#DFB15B] transition-colors">
               Estimator
             </Link>
@@ -44,7 +44,7 @@ export async function SiteHeader({
           </nav>
         )}
 
-        <nav className="flex items-center gap-2 sm:gap-4">
+        <nav aria-label="User navigation" className="flex items-center gap-2 sm:gap-4">
           {session?.user ? (
             <>
               <Button asChild variant="ghost" size="sm">
