@@ -134,16 +134,18 @@ export function BudgetBoard({
           </h2>
           <div className="mt-4 space-y-3">
             <div>
-              <label className="text-xs uppercase tracking-wider text-[#948B79]">Category Name</label>
+              <label htmlFor="budget-category-name" className="text-xs uppercase tracking-wider text-[#948B79]">Category Name</label>
               <Input
+                id="budget-category-name"
                 value={catName}
                 onChange={(e) => setCatName(e.target.value)}
                 placeholder="e.g. Couture Gown, Floral Installation"
               />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-wider text-[#948B79]">Allocated Amount ($)</label>
+              <label htmlFor="budget-category-allocation" className="text-xs uppercase tracking-wider text-[#948B79]">Allocated Amount ($)</label>
               <Input
+                id="budget-category-allocation"
                 type="number"
                 min={0}
                 value={catAlloc || ""}
@@ -177,8 +179,12 @@ export function BudgetBoard({
                 variant="ghost"
                 size="sm"
                 onClick={async () => {
-                  await deleteBudgetCategoryAction(cat.id, eventId);
-                  router.refresh();
+                  try {
+                    await deleteBudgetCategoryAction(cat.id, eventId);
+                    router.refresh();
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Unable to delete category");
+                  }
                 }}
               >
                 Remove
@@ -200,8 +206,12 @@ export function BudgetBoard({
                       size="sm"
                       className="h-7 text-xs text-[#948B79]"
                       onClick={async () => {
-                        await deleteBudgetItemAction(item.id);
-                        router.refresh();
+                        try {
+                          await deleteBudgetItemAction(item.id);
+                          router.refresh();
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Unable to delete budget item");
+                        }
                       }}
                     >
                       Delete
@@ -218,21 +228,27 @@ export function BudgetBoard({
                 const name = String(form.get("name") || "");
                 const dollars = Number(form.get("dollars") || 0);
                 if (!name.trim()) return;
-                await addBudgetItemAction(eventId, {
-                  categoryId: cat.id,
-                  name: name.trim(),
-                  actualCents: dollarsToCents(dollars),
-                });
-                (e.target as HTMLFormElement).reset();
-                router.refresh();
+                try {
+                  await addBudgetItemAction(eventId, {
+                    categoryId: cat.id,
+                    name: name.trim(),
+                    actualCents: dollarsToCents(dollars),
+                  });
+                  (e.target as HTMLFormElement).reset();
+                  router.refresh();
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Unable to add budget item");
+                }
               }}
             >
               <Input
+                aria-label={`Budget item name in ${cat.name}`}
                 name="name"
                 placeholder="Item name (e.g. Deposit)"
                 className="h-8 flex-1 min-w-[160px] text-xs"
               />
               <Input
+                aria-label={`Budget item cost in ${cat.name}`}
                 name="dollars"
                 type="number"
                 min={0}

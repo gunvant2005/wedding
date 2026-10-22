@@ -211,9 +211,9 @@ Visit [http://localhost:3000](http://localhost:3000) to begin curating your prem
 
 ## 🛡️ Security, Performance & Accessibility
 
-The application includes authentication and ownership checks in server actions, request validation, basic security headers, and accessibility affordances such as skip navigation and reduced-motion support. These are implementation measures, not an independent security certification or WCAG conformance claim. Run the project checks before deployment and perform a dedicated accessibility and security review against the production configuration.
+The application includes authentication and ownership checks in server actions, request validation, a per-request nonce-based production CSP, and accessibility affordances including skip navigation, reduced-motion support, and keyboard-operable timeline reordering. These are implementation measures, not an independent security certification or WCAG conformance claim. Run the project checks before deployment and perform a dedicated accessibility and security review against the production configuration.
 
-The current npm audit reports advisories in the Drizzle Kit development-tool dependency chain (`@esbuild-kit` / esbuild). The suggested automatic fix downgrades tooling across a major version, so do not apply it blindly; recheck for an upstream compatible release and keep local development servers private while the advisory remains. `npm audit --omit=dev` is the production dependency check.
+At the time of review (2026-10-22), `npm audit` reports nine advisories: five high-severity findings in the ESLint/Next.js development-tool dependency chain and four moderate findings in Drizzle Kit's `@esbuild-kit`/esbuild chain. `npm audit --omit=dev` still reports the four moderate findings because Better Auth declares Drizzle Kit as an optional peer dependency. npm's suggested remediation downgrades Drizzle Kit across a major version, so it was not applied; recheck for a compatible upstream release and keep development servers private while the esbuild advisory remains. Treat the audit as outstanding and rerun it before deployment.
 
 ---
 

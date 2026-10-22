@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     "10.72.76.202",
   ],
   turbopack: {
+    root: process.cwd(),
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],

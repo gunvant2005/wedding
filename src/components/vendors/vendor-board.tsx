@@ -69,12 +69,14 @@ export function VendorBoard({
         }}
       >
         <Input
+          aria-label="Vendor name"
           placeholder="Vendor name (e.g. Atelier Champagne & Caviar)"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="flex-1 min-w-[200px]"
         />
         <Input
+          aria-label="Vendor category"
           placeholder="Category (e.g. Sommelier, Orchestra)"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
@@ -108,14 +110,19 @@ export function VendorBoard({
                   </div>
                   <div className="flex items-center gap-3">
                     <select
+                      aria-label={`Status for ${v.name}`}
                       className="rounded border border-[rgba(197,160,89,0.3)] bg-[#141418] px-2.5 py-1 text-xs text-[#DFB15B] focus:outline-none"
                       value={v.status}
                       onChange={async (e) => {
-                        await updateVendorStatusAction(
-                          v.id,
-                          e.target.value as VendorItem["status"],
-                        );
-                        router.refresh();
+                        try {
+                          await updateVendorStatusAction(
+                            v.id,
+                            e.target.value as VendorItem["status"],
+                          );
+                          router.refresh();
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Unable to update vendor");
+                        }
                       }}
                     >
                       {STATUSES.map((s) => (
@@ -129,8 +136,12 @@ export function VendorBoard({
                       size="sm"
                       className="h-7 text-xs text-[#948B79] hover:text-red-400"
                       onClick={async () => {
-                        await deleteVendorAction(v.id);
-                        router.refresh();
+                        try {
+                          await deleteVendorAction(v.id);
+                          router.refresh();
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Unable to delete vendor");
+                        }
                       }}
                     >
                       Delete

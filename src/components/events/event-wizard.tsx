@@ -132,6 +132,7 @@ export function EventWizard() {
               <button
                 key={t.id}
                 type="button"
+                aria-pressed={form.type === t.id}
                 onClick={() => setForm((f) => ({ ...f, type: t.id }))}
                 className={
                   form.type === t.id

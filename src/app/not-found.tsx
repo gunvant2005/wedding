@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import { Compass, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function NotFound() {
+export default async function NotFound() {
+  await connection();
+
   return (
     <div className="page-shell flex min-h-screen flex-col items-center justify-center p-6 text-center">
       <div className="w-full max-w-md rounded-3xl border border-[rgba(197,160,89,0.3)] bg-[#121216]/90 p-8 shadow-2xl backdrop-blur-xl">

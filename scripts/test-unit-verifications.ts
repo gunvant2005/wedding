@@ -11,7 +11,9 @@ import {
   budgetItemSchema,
   updateBudgetItemSchema,
   timelineTaskSchema,
+  updateTimelineTaskSchema,
   vendorItemSchema,
+  updateVendorItemSchema,
 } from "../src/lib/validations/event";
 import { chatRequestSchema } from "../src/lib/validations/ai";
 import { normalizeDatabaseUrl } from "../src/lib/db/connection-string";
@@ -332,14 +334,52 @@ test("budgetItemSchema supports paid status and cents tracking", () => {
   assert.strictEqual(item.estimatedCents, 5000000);
 });
 
+test("updateBudgetItemSchema accepts partial fields without allowing category changes", () => {
+  const update = updateBudgetItemSchema.parse({
+    actualCents: 12500,
+    paid: true,
+  });
+  assert.deepStrictEqual(update, { actualCents: 12500, paid: true });
+
+  const categoryChange = updateBudgetItemSchema.parse({
+    categoryId: "another-category",
+  });
+  assert.deepStrictEqual(categoryChange, {});
+});
+
+test("updateBudgetItemSchema rejects invalid money values", () => {
+  assert.throws(() => updateBudgetItemSchema.parse({ actualCents: -1 }));
+  assert.throws(() =>
+    updateBudgetItemSchema.parse({ estimatedCents: 2_000_000_001 }),
+  );
+});
+
 test("updateEventSchema permits partial updates without wiping fields", () => {
   const partial = updateEventSchema.parse({
+    theme: "Gold & White Velvet",
+    status: "confirmed",
+  });
+  assert.deepStrictEqual(partial, {
     theme: "Gold & White Velvet",
     status: "confirmed",
   });
   assert.strictEqual(partial.theme, "Gold & White Velvet");
   assert.strictEqual(partial.status, "confirmed");
   assert.strictEqual(partial.title, undefined);
+});
+
+test("updateTimelineTaskSchema does not apply create defaults to partial updates", () => {
+  assert.deepStrictEqual(
+    updateTimelineTaskSchema.parse({ title: "Confirm ceremony music" }),
+    { title: "Confirm ceremony music" },
+  );
+});
+
+test("updateVendorItemSchema does not apply create defaults to partial updates", () => {
+  assert.deepStrictEqual(
+    updateVendorItemSchema.parse({ status: "booked" }),
+    { status: "booked" },
+  );
 });
 
 test("aiPlanSchema rejects plans with fewer than 5 tasks or 3 categories", () => {

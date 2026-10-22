@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
+  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
+  sortableKeyboardCoordinates,
   arrayMove,
   SortableContext,
   useSortable,
@@ -19,6 +21,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { format } from "date-fns";
 import { GripVertical } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -65,9 +68,9 @@ function SortableTask({
         className="mt-1 cursor-grab text-[#C5A059] hover:text-[#DFB15B]"
         {...attributes}
         {...listeners}
-        aria-label="Drag to reorder"
+        aria-label={`Reorder ${task.title}`}
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVertical className="h-4 w-4" aria-hidden="true" />
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
@@ -84,13 +87,18 @@ function SortableTask({
         )}
         <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
           <select
+            aria-label={`Status for ${task.title}`}
             className="rounded border border-[rgba(197,160,89,0.3)] bg-[#101014] px-2.5 py-1 text-xs text-[#FCFBF7] focus:outline-none focus:border-[#C5A059]"
             value={task.status}
             onChange={async (e) => {
-              await updateTimelineTaskAction(task.id, {
-                status: e.target.value as TimelineTask["status"],
-              });
-              onRefresh();
+              try {
+                await updateTimelineTaskAction(task.id, {
+                  status: e.target.value as TimelineTask["status"],
+                });
+                onRefresh();
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Unable to update task");
+              }
             }}
           >
             <option value="todo">To do</option>
@@ -107,8 +115,12 @@ function SortableTask({
             size="sm"
             className="h-7 px-2 text-[#948B79] hover:text-red-400"
             onClick={async () => {
-              await deleteTimelineTaskAction(task.id);
-              onRefresh();
+              try {
+                await deleteTimelineTaskAction(task.id);
+                onRefresh();
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Unable to delete task");
+              }
             }}
           >
             Delete
@@ -134,7 +146,10 @@ export function TimelineBoard({
     setTasks(initialTasks);
   }
   const [title, setTitle] = useState("");
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const [now] = useState(() => Date.now());
 
   function refresh() {
@@ -144,14 +159,20 @@ export function TimelineBoard({
   async function onDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+    const oldTasks = tasks;
     const oldIndex = tasks.findIndex((t) => t.id === active.id);
     const newIndex = tasks.findIndex((t) => t.id === over.id);
     const next = arrayMove(tasks, oldIndex, newIndex);
     setTasks(next);
-    await reorderTimelineTasksAction(
-      eventId,
-      next.map((t) => t.id),
-    );
+    try {
+      await reorderTimelineTasksAction(
+        eventId,
+        next.map((t) => t.id),
+      );
+    } catch (error) {
+      setTasks(oldTasks);
+      toast.error(error instanceof Error ? error.message : "Unable to reorder tasks");
+    }
   }
 
   return (
@@ -161,16 +182,21 @@ export function TimelineBoard({
         onSubmit={async (e) => {
           e.preventDefault();
           if (!title.trim()) return;
-          await addTimelineTaskAction(eventId, {
-            title: title.trim(),
-            status: "todo",
-            position: tasks.length,
-          });
-          setTitle("");
-          refresh();
+          try {
+            await addTimelineTaskAction(eventId, {
+              title: title.trim(),
+              status: "todo",
+              position: tasks.length,
+            });
+            setTitle("");
+            refresh();
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "Unable to add task");
+          }
         }}
       >
         <Input
+          aria-label="New timeline task"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="New milestone or task (e.g. Royal Florist Consultation)..."

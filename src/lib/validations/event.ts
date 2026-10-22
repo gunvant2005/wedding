@@ -10,19 +10,26 @@ export const vendorStatusSchema = z.enum([
   "paid",
 ]);
 
-export const createEventSchema = z.object({
+const eventFields = {
   type: eventTypeSchema,
   title: z.string().min(2).max(120),
   eventDate: z.iso.date(),
   location: z.string().max(200).optional(),
-  guestCount: z.coerce.number().int().min(0).max(100000).default(0),
-  budgetTotalCents: z.coerce.number().int().min(0).max(2_000_000_000).default(0),
+  guestCount: z.coerce.number().int().min(0).max(100000),
+  budgetTotalCents: z.coerce.number().int().min(0).max(2_000_000_000),
   theme: z.string().max(200).optional(),
   notes: z.string().max(2000).optional(),
-  useAiPlan: z.boolean().default(true),
+  useAiPlan: z.boolean(),
+};
+
+export const createEventSchema = z.object({
+  ...eventFields,
+  guestCount: eventFields.guestCount.default(0),
+  budgetTotalCents: eventFields.budgetTotalCents.default(0),
+  useAiPlan: eventFields.useAiPlan.default(true),
 });
 
-export const updateEventSchema = createEventSchema.partial().extend({
+export const updateEventSchema = z.object(eventFields).partial().extend({
   status: eventStatusSchema.optional(),
 });
 
@@ -32,36 +39,54 @@ export const budgetCategorySchema = z.object({
 });
 export const updateBudgetCategorySchema = budgetCategorySchema.partial();
 
+const budgetItemFields = {
+  name: z.string().min(1).max(120),
+  estimatedCents: z.coerce.number().int().min(0).max(2_000_000_000),
+  actualCents: z.coerce.number().int().min(0).max(2_000_000_000),
+  paid: z.boolean(),
+};
+
 export const budgetItemSchema = z.object({
   categoryId: z.string().min(1),
-  name: z.string().min(1).max(120),
-  estimatedCents: z.coerce.number().int().min(0).max(2_000_000_000).default(0),
-  actualCents: z.coerce.number().int().min(0).max(2_000_000_000).default(0),
-  paid: z.boolean().default(false),
+  ...budgetItemFields,
+  estimatedCents: budgetItemFields.estimatedCents.default(0),
+  actualCents: budgetItemFields.actualCents.default(0),
+  paid: budgetItemFields.paid.default(false),
 });
-export const updateBudgetItemSchema = budgetItemSchema
-  .omit({ categoryId: true })
-  .partial();
 
-export const timelineTaskSchema = z.object({
+export const updateBudgetItemSchema = z.object(budgetItemFields).partial();
+
+const timelineTaskFields = {
   title: z.string().min(1).max(160),
   description: z.string().max(1000).optional(),
   dueDate: z.string().max(40).refine((value) => !Number.isNaN(Date.parse(value)), "Invalid date").optional().nullable(),
-  status: taskStatusSchema.default("todo"),
-  milestone: z.boolean().default(false),
-});
-export const updateTimelineTaskSchema = timelineTaskSchema.partial();
+  status: taskStatusSchema,
+  milestone: z.boolean(),
+};
 
-export const vendorItemSchema = z.object({
+export const timelineTaskSchema = z.object({
+  ...timelineTaskFields,
+  status: timelineTaskFields.status.default("todo"),
+  milestone: timelineTaskFields.milestone.default(false),
+});
+export const updateTimelineTaskSchema = z.object(timelineTaskFields).partial();
+
+const vendorItemFields = {
   name: z.string().min(1).max(120),
-  category: z.string().min(1).max(80).default("General"),
-  status: vendorStatusSchema.default("researching"),
+  category: z.string().min(1).max(80),
+  status: vendorStatusSchema,
   contactName: z.string().max(120).optional(),
   contactEmail: z.string().email().optional().or(z.literal("")),
   contactPhone: z.string().max(40).optional(),
   notes: z.string().max(1000).optional(),
+};
+
+export const vendorItemSchema = z.object({
+  ...vendorItemFields,
+  category: vendorItemFields.category.default("General"),
+  status: vendorItemFields.status.default("researching"),
 });
-export const updateVendorItemSchema = vendorItemSchema.partial();
+export const updateVendorItemSchema = z.object(vendorItemFields).partial();
 
 export const aiPlanSchema = z.object({
   timelineTasks: z
