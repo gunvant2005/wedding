@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDays, Circle, Flag } from "lucide-react";
+import { CalendarDays, CheckCircle2, Flag } from "lucide-react";
 
 const stages = [
   {
@@ -77,37 +77,77 @@ export function TimelinePreview() {
           </p>
         </div>
 
-        <div role="group" className="flex flex-wrap gap-2" aria-label="Timeline stages">
-          {stages.map((item, index) => (
-            <button
-              key={item.label}
-              type="button"
-              aria-pressed={activeStage === index}
-              onClick={() => setActiveStage(index)}
-              className={`rounded-lg px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] ${
-                activeStage === index
-                  ? "bg-[#DFB15B] text-[#09090B]"
-                  : "bg-[#181820] text-[#B6AD9C] hover:text-[#FCFBF7]"
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        {/* Stage progress dots + tab buttons */}
+        <div className="space-y-3">
+          {/* Progress dots */}
+          <div className="flex items-center gap-1.5 px-1" aria-hidden="true">
+            {stages.map((_, i) => (
+              <div key={i} className="relative flex items-center">
+                <div
+                  className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                    i === activeStage
+                      ? "bg-[#DFB15B] scale-125"
+                      : i < activeStage
+                      ? "bg-[#C5A059]/60"
+                      : "bg-[#2A2A35]"
+                  }`}
+                />
+                {i === activeStage && (
+                  <div className="absolute inset-0 rounded-full bg-[#DFB15B] animate-ping opacity-50" />
+                )}
+                {i < stages.length - 1 && (
+                  <div
+                    className={`ml-1.5 h-px w-6 transition-all duration-300 ${
+                      i < activeStage ? "bg-[#C5A059]/60" : "bg-[#2A2A35]"
+                    }`}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Tab buttons */}
+          <div role="group" className="flex flex-wrap gap-2" aria-label="Timeline stages">
+            {stages.map((item, index) => (
+              <button
+                key={item.label}
+                type="button"
+                aria-pressed={activeStage === index}
+                onClick={() => setActiveStage(index)}
+                className={`rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C5A059] ${
+                  activeStage === index
+                    ? "bg-[#DFB15B] text-[#09090B] shadow-[0_0_12px_rgba(223,177,91,0.4)]"
+                    : "bg-[#181820] text-[#B6AD9C] hover:text-[#FCFBF7] hover:bg-[#22222C]"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-12">
         <div className="space-y-3 lg:col-span-7">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#DFB15B]">
-            {stage.title}
-          </h3>
-          {stage.tasks.map((task) => (
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-[#DFB15B]">
+              {stage.title}
+            </h3>
+            <span className="text-[10px] text-[#948B79] uppercase tracking-wider">
+              Stage {activeStage + 1} of {stages.length}
+            </span>
+          </div>
+          {stage.tasks.map((task, taskIdx) => (
             <div
               key={task.title}
-              className="flex items-start justify-between gap-4 rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#17171F]/80 p-3.5"
+              className="group flex items-start justify-between gap-4 rounded-xl border border-[rgba(197,160,89,0.15)] bg-[#17171F]/80 p-3.5 transition-all duration-200 hover:border-[#C5A059]/35 hover:bg-[#1C1C26]/80"
+              style={{ animationDelay: `${taskIdx * 60}ms` }}
             >
               <div className="flex items-start gap-3">
-                <Circle className="mt-0.5 h-4 w-4 shrink-0 text-[#948B79]" aria-hidden="true" />
+                <CheckCircle2
+                  className="mt-0.5 h-4 w-4 shrink-0 text-[#2A2A35] group-hover:text-[#C5A059]/50 transition-colors"
+                  aria-hidden="true"
+                />
                 <span className="text-xs text-[#FCFBF7] sm:text-sm">{task.title}</span>
               </div>
               {"milestone" in task && task.milestone && (
@@ -121,10 +161,15 @@ export function TimelinePreview() {
         </div>
 
         <aside className="rounded-xl border border-[rgba(197,160,89,0.2)] bg-[#191922]/70 p-6 lg:col-span-5">
-          <p className="text-xs font-semibold uppercase tracking-wider text-[#DFB15B]">
-            Planning note
-          </p>
-          <p className="mt-3 text-sm leading-relaxed text-[#DCD4C3]">
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-[#DFB15B]">
+              Planning note
+            </p>
+            <span className="ml-auto rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 px-2 py-0.5 text-[10px] text-[#E8C87E] font-semibold">
+              {activeStage + 1}/{stages.length}
+            </span>
+          </div>
+          <p className="text-sm leading-relaxed text-[#DCD4C3]">
             {stage.note}
           </p>
           <p className="mt-5 border-t border-[rgba(197,160,89,0.15)] pt-4 text-xs leading-relaxed text-[#948B79]">
